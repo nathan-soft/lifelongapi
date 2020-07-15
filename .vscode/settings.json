@@ -1,0 +1,5 @@
+{
+    "appService.preDeployTask": "publish-release",
+    "appService.deploySubpath": "bin\\Release\\netcoreapp3.1\\publish",
+    "appService.defaultWebAppToDeploy": "/subscriptions/4f7d8bbe-ecaf-4f8c-a464-ea39b9455d8a/resourceGroups/LifelongResource/providers/Microsoft.Web/sites/lifelongapi"
+}
