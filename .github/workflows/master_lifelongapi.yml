@@ -31,5 +31,5 @@ jobs:
       with:
         app-name: 'lifelongapi'
         slot-name: 'production'
-        publish-profile: ${{ secrets.AzureAppService_PublishProfile_b892def93dee4ace8bf5d41611fdf05e }}
+        publish-profile: ${{ secrets.AzureAppService_PublishProfile_62213bd466364f4d951092d80c0a6c2b }}
         package: ${{env.DOTNET_ROOT}}/myapp 
