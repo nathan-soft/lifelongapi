@@ -38,7 +38,7 @@ namespace LifeLongApi {
             Host.CreateDefaultBuilder (args)
             .ConfigureWebHostDefaults (webBuilder => {
                 webBuilder.UseStartup<Startup> ();
-                webBuilder.UseUrls("https://localhost:4000/");
+                //webBuilder.UseUrls("https://localhost:4000/");
             });
     }
 }
