@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "G3nwZmyvcgzb0dBt18nzoknka5FisxNUyFPSUSviYBHe1mEeTPGmNjCbk6QX07yT6ix8SRuHeUBAKYbB6A/oHA==",
+  "dgSpecHash": "wR0C3Ez/tJLNmrl+/YqR95mLFSWe2dMHs16zgG8UeUgxwIpCtXzhwLLHymFYpJZs79Lo/HcZiJ3M7v+Aq3wy2A==",
   "success": true,
   "projectFilePath": "C:\\Users\\SomeBody\\Documents\\Projects\\LifeLongApi\\LifeLongApi.csproj",
   "expectedPackageFiles": [
@@ -20,6 +20,7 @@
     "C:\\Users\\SomeBody\\.nuget\\packages\\microsoft.entityframeworkcore.design\\3.1.4\\microsoft.entityframeworkcore.design.3.1.4.nupkg.sha512",
     "C:\\Users\\SomeBody\\.nuget\\packages\\microsoft.entityframeworkcore.relational\\3.1.4\\microsoft.entityframeworkcore.relational.3.1.4.nupkg.sha512",
     "C:\\Users\\SomeBody\\.nuget\\packages\\microsoft.entityframeworkcore.sqlserver\\3.1.4\\microsoft.entityframeworkcore.sqlserver.3.1.4.nupkg.sha512",
+    "C:\\Users\\SomeBody\\.nuget\\packages\\microsoft.entityframeworkcore.tools\\3.1.3\\microsoft.entityframeworkcore.tools.3.1.3.nupkg.sha512",
     "C:\\Users\\SomeBody\\.nuget\\packages\\microsoft.extensions.caching.abstractions\\3.1.4\\microsoft.extensions.caching.abstractions.3.1.4.nupkg.sha512",
     "C:\\Users\\SomeBody\\.nuget\\packages\\microsoft.extensions.caching.memory\\3.1.4\\microsoft.extensions.caching.memory.3.1.4.nupkg.sha512",
     "C:\\Users\\SomeBody\\.nuget\\packages\\microsoft.extensions.configuration\\3.1.4\\microsoft.extensions.configuration.3.1.4.nupkg.sha512",

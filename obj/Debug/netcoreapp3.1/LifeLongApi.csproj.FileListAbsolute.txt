@@ -58,8 +58,6 @@ C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\runtime
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\LifeLongApi.csprojAssemblyReference.cache
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\LifeLongApi.AssemblyInfoInputs.cache
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\LifeLongApi.AssemblyInfo.cs
-C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\LifeLongApi.csproj.CoreCompileInputs.cache
-C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\LifeLongApi.MvcApplicationPartsAssemblyInfo.cache
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\LifeLongApi.RazorTargetAssemblyInfo.cache
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\LifeLongApi.csproj.CopyComplete
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\staticwebassets\LifeLongApi.StaticWebAssets.Manifest.cache
@@ -67,3 +65,6 @@ C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\staticw
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\LifeLongApi.dll
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\LifeLongApi.pdb
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\LifeLongApi.genruntimeconfig.cache
+C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\Properties\serviceDependencies.json
+C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\LifeLongApi.csproj.CoreCompileInputs.cache
+C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\LifeLongApi.MvcApplicationPartsAssemblyInfo.cache
