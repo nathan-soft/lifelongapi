@@ -68,3 +68,4 @@ C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Release\netcoreapp3.1\LifeL
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Release\netcoreapp3.1\LifeLongApi.pdb
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Release\netcoreapp3.1\LifeLongApi.genruntimeconfig.cache
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Release\netcoreapp3.1\Properties\serviceDependencies.json
+C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Release\netcoreapp3.1\Properties\serviceDependencies.lifelongapi - Web Deploy.json
