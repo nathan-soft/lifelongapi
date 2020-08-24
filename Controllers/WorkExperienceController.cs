@@ -60,6 +60,7 @@ namespace LifeLongApi.Controllers
             {
                 //set status code.
                 HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                //log and return default custom error
                 _apiErrorResponse.Message = ex.Message;
                 return _apiErrorResponse;
             }
@@ -88,6 +89,9 @@ namespace LifeLongApi.Controllers
             }
             catch (Exception ex)
             {
+                //set status code.
+                HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                //log and return default custom error
                 _apiErrorResponse.Message = ex.Message;
                 return _apiErrorResponse;
             }
@@ -116,6 +120,9 @@ namespace LifeLongApi.Controllers
             }
             catch (Exception ex)
             {
+                //set status code.
+                HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                //log and return default custom error
                 _apiErrorResponse.Message = ex.Message;
                 return _apiErrorResponse;
             }

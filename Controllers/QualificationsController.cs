@@ -3,6 +3,7 @@ using LifeLongApi.Dtos;
 using LifeLongApi.Dtos.Response;
 using LifeLongApi.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
@@ -56,6 +57,9 @@ namespace LifeLongApi.Controllers
             }
             catch (Exception ex)
             {
+                //set status code.
+                HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                //log and return default custom error
                 _apiErrorResponse.Message = ex.Message;
                 return _apiErrorResponse;
             }
@@ -84,6 +88,9 @@ namespace LifeLongApi.Controllers
             }
             catch (Exception ex)
             {
+                //set status code.
+                HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                //log and return default custom error
                 _apiErrorResponse.Message = ex.Message;
                 return _apiErrorResponse;
             }
@@ -112,6 +119,9 @@ namespace LifeLongApi.Controllers
             }
             catch (Exception ex)
             {
+                //set status code.
+                HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                //log and return default custom error
                 _apiErrorResponse.Message = ex.Message;
                 return _apiErrorResponse;
             }

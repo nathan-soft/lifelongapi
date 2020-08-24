@@ -4,6 +4,7 @@ using LifeLongApi.Dtos.Response;
 using LifeLongApi.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using static LifeLongApi.Codes.AppHelper;
 
 namespace LifeLongApi.Services {
     public interface IUserService {
@@ -14,8 +15,6 @@ namespace LifeLongApi.Services {
         public Task<ServiceResponse<AppUser>> GetUserByUsernameAsync (string username);
         public Task<ServiceResponse<UserDto>> GetUserByUsernameWithRelationshipsAsync (string userName);
         public Task<ServiceResponse<UserDto>> UpdateUserAsync (string username, UserDto userCreds);
-        public Task<ServiceResponse<FollowResponseDto>> CreateOrEditFollowRelationshipAsync (FollowDto requestCreds);
-        //public Task<ServiceResponse<FollowResponseDto>> UpdateFollowRelationshipAsync(FollowDto requestCreds);
         public Task<ServiceResponse<UserFieldOfInterestDto>> AddFieldOfInterestForUser (UserFieldOfInterestDto creds);
         public Task<bool> DoesUserHaveInterestInFieldAsync (UserFieldOfInterestDto creds);
         public Task<ServiceResponse<List<string>>> GetFieldOfInterestNamesForUserAsync (string userName);
@@ -34,6 +33,12 @@ namespace LifeLongApi.Services {
         public Task<ServiceResponse<List<WorkExperienceResponseDto>>> GetUserWorkExperiencesAsync (string username);
         public Task<ServiceResponse<List<SearchResponseDto>>> GetUsersByInterestSearchResultAsync (string searchString);
         Task<ServiceResponse<List<FriendDto>>> GetUserFriendsAsync (string username);
-        Task<ServiceResponse<List<FollowResponseDto>>> GetMentorshipRequestsAsync (string mentorUsername);
+        Task<ServiceResponse<List<UnAttendedRequestDto>>> GetMentorshipRequestsAsync (string mentorUsername);
+        Task<ServiceResponse<List<UnAttendedRequestDto>>> GetFriendshipInfoAsync(string mentorUsername, string menteeUsername);
+
+
+
+
+        Task<List<MutualInterestDto>> GetAllMentorshipMutualInterestAsync(int mentorId, int menteeId);
     }
 }

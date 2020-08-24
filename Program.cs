@@ -22,10 +22,11 @@ namespace LifeLongApi {
                     var userService = serviceProvider.GetRequiredService<IUserService> ();
                     var roleService = serviceProvider.GetRequiredService<IRoleService> ();
                     var categoryService = serviceProvider.GetRequiredService<ICategoryService>();
+                    var followService = serviceProvider.GetRequiredService<IFollowService>();
                     var topicService = serviceProvider.GetRequiredService<ITopicService>();
                     var mapper = serviceProvider.GetRequiredService<IMapper>();
                     //UserAndRoleDataInitializer.SeedData (userManager, roleManager);
-                    var dbs = new DbSeeder(userService, roleService, categoryService, topicService);
+                    var dbs = new DbSeeder(userService, roleService, categoryService, followService, topicService);
                     await dbs.SeedDataAsync();
                 } catch (Exception ex) {
                     Debug.WriteLine (ex.Message);
@@ -38,7 +39,7 @@ namespace LifeLongApi {
             Host.CreateDefaultBuilder (args)
             .ConfigureWebHostDefaults (webBuilder => {
                 webBuilder.UseStartup<Startup> ();
-                //webBuilder.UseUrls("https://localhost:4000/");
+                webBuilder.UseUrls("https://localhost:4000/");
             });
     }
 }

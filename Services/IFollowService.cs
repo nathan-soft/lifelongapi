@@ -1,5 +1,6 @@
 using LifeLongApi.Codes;
 using LifeLongApi.Dtos;
+using LifeLongApi.Dtos.Response;
 using LifeLongApi.Models;
 using System;
 using System.Collections.Generic;
@@ -9,11 +10,9 @@ namespace LifeLongApi.Services
 {
     public interface IFollowService
     {
-        //public Task<ServiceResponse<List<CategoryDto>>> GetAllCategoriesAsync();
-        //should be on user service.
-        //public Task<ServiceResponse<CategoryDto>> GetFollowRelationshipAsync(int id);
-        // public Task AddFollowAsync(int mentorId, int menteeId, int topicId);
-        // public Task<ServiceResponse<FollowDto>> UpdateCategoryAsync(FollowDto followCred);
-        // public Task DeleteFollowAsync(int mentorId, int menteeId, int topicId);
+        Task<ServiceResponse<FriendDto>> ConfirmMentorshipRequestAsync(int mentorshipId, MentorshipRequestUpdateDto mentorshipRequest);
+        Task<ServiceResponse<UnAttendedRequestDto>> CreateMentorshipRequestAsync(FollowDto requestCreds);
+        Task<ServiceResponse<UnAttendedRequestDto>> DeleteMentorshipRequestAsync(int mentorshipId);
+        Task<ServiceResponse<UnAttendedRequestDto>> PutMentorshipRequestOnHoldAsync(int mentorshipId, MentorshipRequestUpdateDto mentorshipRequest);
     }
 }

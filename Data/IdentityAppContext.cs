@@ -15,17 +15,18 @@ namespace LifeLongApi.Data {
             base.OnModelCreating (modelBuilder);
 
             modelBuilder.Entity<Follow> ()
-                .HasKey (k => new { k.UserId, k.FollowingMentorId, k.TopicId });
+                .HasIndex (f => new { f.MenteeId, f.MentorId, f.TopicId })
+                .IsUnique();
 
-            modelBuilder.Entity<Follow> ()
-                .HasOne (l => l.User)
-                .WithMany (a => a.Followers)
-                .HasForeignKey (l => l.UserId);
+            // modelBuilder.Entity<Follow> ()
+            //     .HasOne (f => f.Mentee)
+            //     .WithMany (a => a.Mentees)
+            //     .HasForeignKey (f => f.MenteeId);
 
-            modelBuilder.Entity<Follow> ()
-                .HasOne (l => l.Follower)
-                .WithMany (a => a.Following)
-                .HasForeignKey (l => l.FollowingMentorId);
+            // modelBuilder.Entity<Follow> ()
+            //     .HasOne (f => f.Mentor)
+            //     .WithMany (a => a.Mentors)
+            //     .HasForeignKey (f => f.MentorId);
 
             modelBuilder.Entity<UserFieldOfInterest>()
                 .HasKey(uf => new { uf.UserId, uf.TopicId });

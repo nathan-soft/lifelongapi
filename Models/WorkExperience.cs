@@ -22,7 +22,7 @@ namespace LifeLongApi.Models
         public int EndYear { get; set; }
         public bool CurrentlyWorking { get; set; }
 
-        public AppUser User { get; set; }
-        public Topic Topic { get; set; }
+        public virtual AppUser User { get; set; }
+        public virtual Topic Topic { get; set; }
     }
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LifeLongApi.Models {
     public class AppUser : IdentityUser<int> {
@@ -13,12 +14,22 @@ namespace LifeLongApi.Models {
         public string Country { get; set; }
 
         // public int MenteesCount { get; set; }
-        
-        public List<Qualification> Qualifications { get; set; }
-        public List<WorkExperience> WorkExperiences { get; set; }
-        public virtual List<Follow> Following { get; set; }
-        public virtual List<Follow> Followers { get; set; }
-        public List<AppRole> Roles { get; set; }
-        public List<UserFieldOfInterest> UserFieldOfInterests { get; set; }
+
+        [InverseProperty("Mentor")]
+        public virtual List<Appointment> MentorAppointments { get; set; }
+        [InverseProperty("Mentee")]
+        public virtual List<Appointment> MenteeAppointments { get; set; }
+        [InverseProperty("CreatedBy")]
+        public virtual List<Notification> CreatedByNotifications { get; set; }
+        [InverseProperty("CreatedFor")]
+        public virtual List<Notification> CreatedForNotifications { get; set; }
+        public virtual List<Qualification> Qualifications { get; set; }
+        public virtual List<WorkExperience> WorkExperiences { get; set; }
+        [InverseProperty("Mentor")]
+        public virtual List<Follow> Mentors { get; set; }
+        [InverseProperty("Mentee")]
+        public virtual List<Follow> Mentees { get; set; }
+        public virtual List<AppRole> Roles { get; set; }
+        public virtual List<UserFieldOfInterest> UserFieldOfInterests { get; set; }
     }
 }

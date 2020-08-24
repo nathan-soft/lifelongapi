@@ -2,6 +2,7 @@ using AutoMapper;
 using LifeLongApi.Dtos;
 using LifeLongApi.Dtos.Response;
 using LifeLongApi.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 //using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -48,24 +49,37 @@ namespace LifeLongApi.Controllers {
 
             [HttpPost("register")]
             public async Task<ApiResponseDto> Register (RegisterDto userInfo) {
+                try
+                {
                 //try creating the user.
                 var result = await _userService.CreateUserAsync(userInfo);
-                 //set status code.
+                //set status code.
                 HttpContext.Response.StatusCode = result.Code;
                 if (result.Data != null)
                 {
-                //user was created successfully
-                //set  location header of newly created user.
-                Response
-                        .Headers
-                        .Add(HeaderNames.Location, $"{HttpContext.Request.Host}/api/users/{result.Data.Email}");
+                    //user was created successfully
+                    //set  location header of newly created user.
+                    Response
+                            .Headers
+                            .Add(HeaderNames.Location, $"{HttpContext.Request.Host}/api/users/{result.Data.Email}");
                     //Take of password before returning data.
                     result.Data.Password = null;
                     return _apiOkResponse = _mapper.Map<ApiOkResponseDto>(result);
-                }else{
+                }
+                else
+                {
                     //error
                     //return error.
                     return _apiErrorResponse = _mapper.Map<ApiErrorResponseDto>(result);
+                }
+                }
+                catch (Exception ex)
+                {
+                    //set status code.
+                    HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                    //log and return default custom error
+                    _apiErrorResponse.Message = ex.Message;
+                    return _apiErrorResponse;
                 }
             }
         }

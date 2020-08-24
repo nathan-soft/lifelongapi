@@ -12,6 +12,8 @@ namespace LifeLongApi.Data.Repositories
         public async Task<List<WorkExperience>> GetAllForUserAsync(int userId){
             return await context.Set<WorkExperience>()
                                 .Where(we => we.UserId == userId)
+                                .OrderByDescending(qi => qi.EndYear)
+                                .ThenByDescending(qi => qi.CurrentlyWorking)
                                 .ToListAsync();
         }
 

@@ -18,15 +18,18 @@ namespace LifeLongApi.Data.Repositories
             this.context = context;
             entities = context.Set<T>();
         }
+
         public async Task<IEnumerable<T>> GetAllAsync()
         {
             return await entities.ToListAsync();
         }
+
         public async Task<T> GetByIdAsync(int id)
         {
             //return entities.SingleOrDefault(s => s.Id == id);
             return await entities.FindAsync(id);
         }
+
         public async Task InsertAsync(T entity)
         {
             if (entity == null) throw new ArgumentNullException("entity");

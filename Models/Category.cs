@@ -5,6 +5,6 @@ namespace LifeLongApi.Models {
         public int Id { get; set; }
         public string Name { get; set; }
 
-        public IList<Topic> Topics { get; set; }
+        public virtual List<Topic> Topics { get; set; }
     }
 }

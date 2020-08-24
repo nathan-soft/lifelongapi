@@ -6,8 +6,8 @@ namespace LifeLongApi.Models {
         public int CategoryId { get; set; }
         public string Name { get; set; }
 
-        public Category Category { get; set; }
-        public IList<Follow> Follows { get; set; }
-        public IList<UserFieldOfInterest> UserFieldOfInterests { get; set; }
+        public virtual Category Category { get; set; }
+        public virtual List<Follow> Follows { get; set; }
+        public virtual List<UserFieldOfInterest> UserFieldOfInterests { get; set; }
     }
 }

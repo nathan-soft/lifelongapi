@@ -14,11 +14,17 @@ namespace LifeLongApi.Data.DataInitializer
         private static IUserService _userService;
         private static IRoleService _roleService;
         private static ICategoryService _categoryService;
+        private static IFollowService _followService;
         private static ITopicService _topicService;
 
-        public DbSeeder(IUserService userService, IRoleService roleService, ICategoryService categoryService, ITopicService topicService)
+        public DbSeeder(IUserService userService,
+                        IRoleService roleService,
+                        ICategoryService categoryService,
+                        IFollowService followService,
+                        ITopicService topicService)
         {
             _categoryService = categoryService;
+            _followService = followService;
             _topicService = topicService;
             _userService = userService;
             _roleService = roleService;
@@ -455,7 +461,7 @@ namespace LifeLongApi.Data.DataInitializer
                 TopicName = user.Data.UserFieldOfInterests[0].Topic.Name
             };
 
-            var result = await _userService.CreateOrEditFollowRelationshipAsync(request);
+            var result = await _followService.CreateMentorshipRequestAsync(request);
         }
 
         private static async Task SeedFieldOfInterestsForDefaultUsersAsync()

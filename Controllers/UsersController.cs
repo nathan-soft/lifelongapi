@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace LifeLongApi.Controllers
 {
@@ -20,13 +21,15 @@ namespace LifeLongApi.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IAppointmentService _appointmentService;
         private static ApiOkResponseDto _apiOkResponse;
         private static ApiErrorResponseDto _apiErrorResponse;
         private readonly IMapper _mapper;
 
-        public UsersController(IMapper mapper, IUserService userService,
+        public UsersController(IMapper mapper, IUserService userService, IAppointmentService appointmentService,
                     ApiOkResponseDto apiOkResponse, ApiErrorResponseDto apiErrorResponse)
         {
+            _appointmentService = appointmentService;
             _userService = userService;
             _mapper = mapper;
             _apiErrorResponse = apiErrorResponse;
@@ -36,18 +39,63 @@ namespace LifeLongApi.Controllers
         [HttpGet("{username}")]
         public async Task<ApiResponseDto> GetUserAsync(string username)
         {
-            var userDto = await _userService.GetUserByUsernameWithRelationshipsAsync(username);
-            //set status code.
-            HttpContext.Response.StatusCode = userDto.Code;
-            if(!userDto.Success){
-                //error
-                //return error.
-                return _apiErrorResponse = _mapper.Map<ApiErrorResponseDto>(userDto);
-            }else{
-                //return data.
-                _apiOkResponse.Data = userDto.Data;
-               return _apiOkResponse;
+            try
+            {
+                var userDto = await _userService.GetUserByUsernameWithRelationshipsAsync(username);
+                //set status code.
+                HttpContext.Response.StatusCode = userDto.Code;
+                if (userDto.Success)
+                {
+                    //return data.
+                    _apiOkResponse.Data = userDto.Data;
+                    return _apiOkResponse;
+                }
+                else
+                {
+                    //error
+                    //return error.
+                    return _apiErrorResponse = _mapper.Map<ApiErrorResponseDto>(userDto);
+                }
             }
+            catch (Exception ex)
+            {
+                //set status code.
+                HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                //log and return default custom error
+                _apiErrorResponse.Message = ex.Message;
+                return _apiErrorResponse;
+            }
+            
+        }
+
+        [HttpPut("{username}/edit")]
+        public async Task<ApiResponseDto> EditUserAsync(string username, UserDto userCreds)
+        {
+            try
+            {
+                var result = await _userService.UpdateUserAsync(username, userCreds);
+                //set status code.
+                HttpContext.Response.StatusCode = result.Code;
+                if (result.Data != null)
+                {
+                    //update was successful.
+                    return _apiOkResponse = _mapper.Map<ApiOkResponseDto>(result);
+                }
+                else
+                {
+                    //error
+                    return _apiErrorResponse = _mapper.Map<ApiErrorResponseDto>(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                //set status code.
+                HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                //log and return default custom error
+                _apiErrorResponse.Message = ex.Message;
+                return _apiErrorResponse;
+            }
+            
         }
 
         // [Authorize(Roles = "Admin")]
@@ -79,12 +127,12 @@ namespace LifeLongApi.Controllers
         //     return Created("/", null);
         // }
 
-        [HttpGet("mentors/{mentesUsername}/requests")]
-        public async Task<ApiResponseDto> GetMentorshipRequestsForMentorAsync(string mentesUsername)
+        [HttpGet("{username}/requests")]
+        public async Task<ApiResponseDto> GetMentorshipRequestsForMentorAsync(string username)
         {
             try
             {
-                var response = await _userService.GetMentorshipRequestsAsync(mentesUsername);
+                var response = await _userService.GetMentorshipRequestsAsync(username);
                 //set status code.
                 HttpContext.Response.StatusCode = response.Code;
 
@@ -99,14 +147,16 @@ namespace LifeLongApi.Controllers
             }
             catch (Exception ex)
             {
-                HttpContext.Response.StatusCode = 500;
-                 _apiErrorResponse.Message = ex.Message;
+                //set status code.
+                HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                //log and return default custom error
+                _apiErrorResponse.Message = ex.Message;
                 return _apiErrorResponse;
             }
         }
 
 
-         [HttpGet("{username}/friends")]
+        [HttpGet("{username}/friends")]
         public async Task<ApiResponseDto> GetFriendsAsync(string username)
         {
             try
@@ -129,13 +179,16 @@ namespace LifeLongApi.Controllers
             }
             catch (Exception ex)
             {
-                HttpContext.Response.StatusCode = 500;
+                //set status code.
+                HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                //log and return default custom error
                 _apiErrorResponse.Message = ex.Message;
                 return _apiErrorResponse;
             }
         }
 
-
+        
+        
 
 
         
@@ -164,7 +217,9 @@ namespace LifeLongApi.Controllers
             }
             catch (Exception ex)
             {
-                HttpContext.Response.StatusCode = 500;
+                //set status code.
+                HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                //log and return default custom error
                 _apiErrorResponse.Message = ex.Message;
                 return _apiErrorResponse;
             }
@@ -207,7 +262,9 @@ namespace LifeLongApi.Controllers
             }
             catch (Exception ex)
             {
-                HttpContext.Response.StatusCode = 500;
+                //set status code.
+                HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                //log and return default custom error
                 _apiErrorResponse.Message = ex.Message;
                 return _apiErrorResponse;
             }
@@ -236,7 +293,9 @@ namespace LifeLongApi.Controllers
             }
             catch (Exception ex)
             {
-                HttpContext.Response.StatusCode = 500;
+                //set status code.
+                HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                //log and return default custom error
                 _apiErrorResponse.Message = ex.Message;
                 return _apiErrorResponse;
             }
@@ -265,7 +324,9 @@ namespace LifeLongApi.Controllers
             }
             catch (Exception ex)
             {
-                HttpContext.Response.StatusCode = 500;
+                //set status code.
+                HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                //log and return default custom error
                 _apiErrorResponse.Message = ex.Message;
                 return _apiErrorResponse;
             }
@@ -296,13 +357,44 @@ namespace LifeLongApi.Controllers
             catch (Exception ex)
             {
                 //set status code.
-                HttpContext.Response.StatusCode = 500;
-                _apiErrorResponse.Message = ex.StackTrace;
+                HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                //log and return default custom error
+                _apiErrorResponse.Message = ex.Message;
                 return _apiErrorResponse;
             }
         }
 
-        
+
+        [HttpGet("{mentorUsername}/appointments")]
+        public async Task<ApiResponseDto> GetMentorAppointmentsAsync(string mentorUsername)
+        {
+            try
+            {
+                var response = await _appointmentService.GetMentorsAppointmentsAsync(mentorUsername);
+                //set status code.
+                HttpContext.Response.StatusCode = response.Code;
+
+                if (response.Success)
+                {
+                    //return data.
+                    _apiOkResponse.Data = response.Data;
+                    return _apiOkResponse;
+                }
+                else
+                {
+                    return _apiErrorResponse = _mapper.Map<ApiErrorResponseDto>(response);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                //set status code.
+                HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                //log and return default custom error
+                _apiErrorResponse.Message = ex.Message;
+                return _apiErrorResponse;
+            }
+        }
     }
 
 

@@ -34,7 +34,10 @@ namespace LifeLongApi {
             services.AddControllers ();
             services.AddAutoMapper (typeof (Startup));
             services.AddScoped<IAuthService, AuthService> ();
+            services.AddScoped<IAppointmentService, AppointmentService>();
             services.AddScoped<ICategoryService, CategoryService>();
+            services.AddScoped<IFollowService, FollowService>();
+            services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IRoleService, RoleService>();
             services.AddScoped<ITopicService, TopicService>();
             services.AddScoped<IUserService, UserService>();
@@ -42,9 +45,11 @@ namespace LifeLongApi {
             services.AddScoped(typeof(ApiOkResponseDto));
             services.AddScoped(typeof(ApiErrorResponseDto));
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+            services.AddScoped<IAppointmentRepository, AppointmentRepository>();
             services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddScoped<IFollowRepository, FollowRepository>();
             services.AddScoped<IQualificationRepository, QualificationRepository>();
+            services.AddScoped<INotificationRepository, NotificationRepository>();
             services.AddScoped<ITopicRepository, TopicRepository>();
             services.AddScoped<IUserFieldOfInterestRepository, UserFieldOfInterestRepository>();
             services.AddScoped<IWorkExperienceRepository, WorkExperienceRepository>();
@@ -55,7 +60,7 @@ namespace LifeLongApi {
             }).AddEntityFrameworkStores<IdentityAppContext> ();
 
             services.AddDbContext<IdentityAppContext> (options => {
-                options.UseSqlServer (Configuration.GetConnectionString ("DefaultConnec"));
+                options.UseLazyLoadingProxies().UseSqlServer(Configuration.GetConnectionString("DefaultConnec"));
             });
 
             services.Configure<IdentityOptions> (options => {
@@ -86,9 +91,9 @@ namespace LifeLongApi {
                     options.Events = new JwtBearerEvents () {
                         OnChallenge = context => {
                             context.HandleResponse ();
-
-                            var response = new { error = "Unauthorized access" };
-                            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                            var code = StatusCodes.Status401Unauthorized;
+                            var response = new { Code = code.ToString(), Message = "Unauthorized access" };
+                            context.Response.StatusCode = code;
                             context.HttpContext.Response.Headers.Append ("www-authenticate", "Bearer");
                             return context.Response.WriteAsync (JsonConvert.SerializeObject (response));
                         }
@@ -100,7 +105,7 @@ namespace LifeLongApi {
                         ValidAudience = Configuration.GetSection ("Jwt").GetSection ("Audience").Value,
                         ValidIssuer = Configuration.GetSection ("Jwt").GetSection ("Issuer").Value,
                         IssuerSigningKey = new SymmetricSecurityKey (Encoding.ASCII
-                        .GetBytes (Configuration.GetSection ("Jwt").GetSection ("Key").Value)),
+                        .GetBytes (Configuration.GetSection ("Jwt").GetSection ("Key").Value))
                     };
                 });
         }

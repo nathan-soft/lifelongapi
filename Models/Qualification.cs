@@ -20,6 +20,6 @@ namespace LifeLongApi.Models
         [Required]
         public int EndYear { get; set; }
 
-        public AppUser User { get; set; }
+        public virtual AppUser User { get; set; }
     }
 }

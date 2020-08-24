@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LifeLongApi.Migrations
 {
     [DbContext(typeof(IdentityAppContext))]
-    [Migration("20200715140449_InitialCommit")]
-    partial class InitialCommit
+    [Migration("20200811123642_InitialCreate")]
+    partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -143,6 +143,48 @@ namespace LifeLongApi.Migrations
                     b.ToTable("AspNetUsers");
                 });
 
+            modelBuilder.Entity("LifeLongApi.Models.Appointment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DateAndTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("MenteeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MentorId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MenteeId");
+
+                    b.HasIndex("MentorId");
+
+                    b.ToTable("Appointment");
+                });
+
             modelBuilder.Entity("LifeLongApi.Models.Category", b =>
                 {
                     b.Property<int>("Id")
@@ -166,32 +208,79 @@ namespace LifeLongApi.Migrations
 
             modelBuilder.Entity("LifeLongApi.Models.Follow", b =>
                 {
-                    b.Property<int>("UserId")
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MenteeId")
                         .HasColumnType("int");
 
-                    b.Property<int>("FollowingMentorId")
+                    b.Property<int>("MentorId")
                         .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("TopicId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MentorId");
+
+                    b.HasIndex("TopicId");
+
+                    b.HasIndex("MenteeId", "MentorId", "TopicId")
+                        .IsUnique();
+
+                    b.ToTable("Follows");
+                });
+
+            modelBuilder.Entity("LifeLongApi.Models.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<int>("CreatedById")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CreatedForId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Status")
+                    b.Property<bool>("IsSeen")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UpdatedOn")
                         .HasColumnType("datetime2");
 
-                    b.HasKey("UserId", "FollowingMentorId", "TopicId");
+                    b.HasKey("Id");
 
-                    b.HasIndex("FollowingMentorId");
+                    b.HasIndex("CreatedById");
 
-                    b.HasIndex("TopicId");
+                    b.HasIndex("CreatedForId");
 
-                    b.ToTable("Follows");
+                    b.ToTable("Notification");
                 });
 
             modelBuilder.Entity("LifeLongApi.Models.Qualification", b =>
@@ -234,6 +323,24 @@ namespace LifeLongApi.Migrations
                         .IsUnique();
 
                     b.ToTable("Qualifications");
+                });
+
+            modelBuilder.Entity("LifeLongApi.Models.Reminder", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<int>("AppointmentId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppointmentId")
+                        .IsUnique();
+
+                    b.ToTable("Reminder");
                 });
 
             modelBuilder.Entity("LifeLongApi.Models.SubCategory", b =>
@@ -474,11 +581,32 @@ namespace LifeLongApi.Migrations
                         .HasForeignKey("AppUserId");
                 });
 
+            modelBuilder.Entity("LifeLongApi.Models.Appointment", b =>
+                {
+                    b.HasOne("LifeLongApi.Models.AppUser", "Mentee")
+                        .WithMany("MenteeAppointments")
+                        .HasForeignKey("MenteeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LifeLongApi.Models.AppUser", "Mentor")
+                        .WithMany("MentorAppointments")
+                        .HasForeignKey("MentorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("LifeLongApi.Models.Follow", b =>
                 {
-                    b.HasOne("LifeLongApi.Models.AppUser", "Follower")
-                        .WithMany("Following")
-                        .HasForeignKey("FollowingMentorId")
+                    b.HasOne("LifeLongApi.Models.AppUser", "Mentee")
+                        .WithMany("Mentees")
+                        .HasForeignKey("MenteeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LifeLongApi.Models.AppUser", "Mentor")
+                        .WithMany("Mentors")
+                        .HasForeignKey("MentorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -487,10 +615,19 @@ namespace LifeLongApi.Migrations
                         .HasForeignKey("TopicId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
 
-                    b.HasOne("LifeLongApi.Models.AppUser", "User")
-                        .WithMany("Followers")
-                        .HasForeignKey("UserId")
+            modelBuilder.Entity("LifeLongApi.Models.Notification", b =>
+                {
+                    b.HasOne("LifeLongApi.Models.AppUser", "CreatedBy")
+                        .WithMany("CreatedByNotifications")
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LifeLongApi.Models.AppUser", "CreatedFor")
+                        .WithMany("CreatedForNotifications")
+                        .HasForeignKey("CreatedForId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -500,6 +637,15 @@ namespace LifeLongApi.Migrations
                     b.HasOne("LifeLongApi.Models.AppUser", "User")
                         .WithMany("Qualifications")
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LifeLongApi.Models.Reminder", b =>
+                {
+                    b.HasOne("LifeLongApi.Models.Appointment", "Appointment")
+                        .WithOne("Reminder")
+                        .HasForeignKey("LifeLongApi.Models.Reminder", "AppointmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

@@ -4,21 +4,13 @@ using LifeLongApi.Dtos;
 using LifeLongApi.Data.Repositories;
 using LifeLongApi.Dtos.Response;
 using LifeLongApi.Models;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IdentityModel;
-using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
-using System.Security.Claims;
-using System.Text;
 using System.Threading.Tasks;
+using static LifeLongApi.Codes.AppHelper;
 
 namespace LifeLongApi.Services
 {
@@ -28,11 +20,20 @@ namespace LifeLongApi.Services
         private readonly IFollowRepository _followRepo;
         private readonly ITopicService _topicService;
         private readonly IQualificationRepository _qualificationRepo;
+        private readonly INotificationService _notificationService;
+
         private readonly IUserFieldOfInterestRepository _userFieldOfInterestRepo;
         private readonly IWorkExperienceRepository _workExperienceRepo;
         private readonly IMapper _mapper;
-        public UserService(UserManager<AppUser> userManager, IFollowRepository followRepo,
-                            ITopicService topicService, IMapper mapper, IUserFieldOfInterestRepository userFieldOfInterestRepo, IQualificationRepository qualificationRepo, IWorkExperienceRepository workExperienceRepo)
+        public UserService(UserManager<AppUser> userManager,
+                           IAppointmentRepository appointmentRepo,
+                           IFollowRepository followRepo,
+                           ITopicService topicService,
+                           IMapper mapper,
+                           IUserFieldOfInterestRepository userFieldOfInterestRepo,
+                           IQualificationRepository qualificationRepo,
+                           INotificationService notificationService,
+                           IWorkExperienceRepository workExperienceRepo)
         {
             _userManager = userManager;
             _followRepo = followRepo;
@@ -40,6 +41,7 @@ namespace LifeLongApi.Services
             _mapper = mapper;
             _userFieldOfInterestRepo = userFieldOfInterestRepo;
             _qualificationRepo = qualificationRepo;
+            _notificationService = notificationService;
             _workExperienceRepo = workExperienceRepo;
         }
         public async Task<ServiceResponse<RegisterDto>> CreateUserAsync(RegisterDto newUser){
@@ -80,9 +82,7 @@ namespace LifeLongApi.Services
             if (foundUser == null)
             {
                 //user does not exist.
-                sr.Code = 404;
-                sr.Success = false;
-                sr.Message = "user not found.";
+                sr.HelperMethod(404, "user not found.", false);
             }
             else
             {
@@ -122,9 +122,7 @@ namespace LifeLongApi.Services
             else
             {
                 //user does not exist.
-                sr.Code = 404;
-                sr.Success = false;
-                sr.Message = "User not found.";
+                sr.HelperMethod(404, "User not found.", false);
             }
             return sr;
         }
@@ -137,9 +135,7 @@ namespace LifeLongApi.Services
             if(user.Data == null){
                 //user not found
                 //return error message gotten
-                sr.Code = 404;
-                sr.Success = false;
-                sr.Message = user.Message;
+                sr.HelperMethod(404, user.Message, false);
                 return sr;
             }
 
@@ -169,9 +165,7 @@ namespace LifeLongApi.Services
             var sr = new ServiceResponse<List<SearchResponseDto>>();
 
             if(String.IsNullOrWhiteSpace(searchString)){
-                sr.Code = 404;
-                sr.Success = false;
-                sr.Message = "Please enter a search phrase";
+                sr.HelperMethod(404, "Please enter a search phrase", false);
                 return sr;
             }
 
@@ -179,18 +173,14 @@ namespace LifeLongApi.Services
             var topicCreds = await _topicService.GetFieldOfInterestByNameAsync(searchString);
             if (topicCreds.Data == null)
             {
-                sr.Code = 404;
-                sr.Success = false;
-                sr.Message = topicCreds.Message;
+                sr.HelperMethod(404, topicCreds.Message, false);
                 return sr;
             }
 
-            var users = await _userFieldOfInterestRepo.GetUsersForFieldOfInterestAsync(topicCreds.Data.Id);
+            var users = await _userFieldOfInterestRepo.GetUsersByFieldOfInterestAsync(topicCreds.Data.Id);
             if (users.Count == 0)
             {
-                sr.Code = 404;
-                sr.Success = false;
-                sr.Message = "No Mentor found.";
+                sr.HelperMethod(404, "No Mentor found.", false);
                 return sr;
             }
 
@@ -209,9 +199,8 @@ namespace LifeLongApi.Services
             if (user.Data == null)
             {
                 //User does not exist
-                sr.Code = 404;
-                sr.Success = false;
-                sr.Message = user.Message;
+                sr.HelperMethod(404, user.Message, false);
+                return sr;
             }
             //save field of interest Ids into a variable
             var userFieldOfInterestIds = _userFieldOfInterestRepo.GetFieldOfInterestIdsForUser(user.Data.Id);
@@ -231,70 +220,8 @@ namespace LifeLongApi.Services
             return sr;
         }
 
-        public async Task<ServiceResponse<FollowResponseDto>> CreateOrEditFollowRelationshipAsync(FollowDto requestCreds){
-            var sr = new ServiceResponse<FollowResponseDto>();
-            //VALIDATIONS
-            //validate mentor username
-            var mentorCreds = await _userManager.FindByNameAsync(requestCreds.MentorUsername);
-            if (mentorCreds == null)
-            {
-                sr.HelperMethod(404, $"Could not find mentor with username {requestCreds.MentorUsername}", false);
-                return sr;
-            }
 
-            //validate mentees username
-            var menteeCreds = await _userManager.FindByNameAsync(requestCreds.MenteeUsername);
-            if (menteeCreds == null)
-            {
-                sr.HelperMethod(404, $"Could not find mentee with username {requestCreds.MenteeUsername}", false);
-                return sr;
-            }
 
-            //validate topic name
-            var topicCreds = await _topicService.GetFieldOfInterestByNameAsync(requestCreds.TopicName);
-            if (topicCreds.Data == null)
-            {
-                sr.HelperMethod(404, $"Could not find field Of interest with name {requestCreds.TopicName}", false);
-                return sr;
-            }
-
-            //validate that mentor has listed the topic, with the id of  "topicId" ,as part of their field of interest.
-            var mentorHasInterest = await ValidateUserHasInterestInFieldAsync<FollowResponseDto>(mentorCreds.Id, topicCreds.Data.Id);
-            if (!mentorHasInterest.Success)
-            {
-                return mentorHasInterest;
-            }
-            
-            //get existing relationship
-            var relationshipExist = await _followRepo.GetFollowRelationshipAsync(menteeCreds.Id, mentorCreds.Id, topicCreds.Data.Id);
-            //check if relationship exist already
-            if (relationshipExist == null)
-            {
-                var followingRequest = new Follow
-                {
-                    UserId = menteeCreds.Id,
-                    FollowingMentorId = mentorCreds.Id,
-                    TopicId = topicCreds.Data.Id,
-                    Status = AppHelper.FollowStatus.PENDING.ToString()
-                };
-                //insert new relationship to db and save.
-                await _followRepo.InsertAsync(followingRequest);
-                sr.Code = 201;
-                sr.Data = _mapper.Map<FollowResponseDto>(followingRequest);
-                sr.Success = true;
-                return sr;
-            }else{
-                //update existing relationship
-                relationshipExist.Status = requestCreds.Status;
-                //update existing relationship to db and save.
-                await _followRepo.UpdateAsync(relationshipExist);
-                sr.Code = 200;
-                sr.Data = _mapper.Map<FollowResponseDto>(relationshipExist);
-                sr.Success = true;
-                return sr;
-            }
-            
-        }
 
         public async Task<ServiceResponse<UserFieldOfInterestDto>> AddFieldOfInterestForUser(UserFieldOfInterestDto creds){
             var sr = new ServiceResponse<UserFieldOfInterestDto>();
@@ -364,26 +291,13 @@ namespace LifeLongApi.Services
                 return false;
             }
         }
-        private async Task<ServiceResponse<T>> ValidateUserHasInterestInFieldAsync<T>(int userId, int topicId){
-            //validate that mentor has listed the topic, with the id of  "topicId" ,as part of their field of interest.
-            var mentorHasInterest = await _userFieldOfInterestRepo.IsFieldPartOfUserInterestsAsync(userId, topicId);
-            var sr = new ServiceResponse<T>();
-            if (!mentorHasInterest)
-            {
-                sr.HelperMethod(
-                            404,
-                            $"The selected field of interest is not part of mentors interests",
-                            false
-                );
-            }else{
-                sr.Success = true;
-            }
-            return sr;
-        }
+
+        
+        
+        
 
 
-
-
+        
         //USER QUALIFICATIONS SECTION
 
         public async Task<ServiceResponse<List<QualificationResponseDto>>> GetUserQualificationsAsync(string username)
@@ -444,7 +358,7 @@ namespace LifeLongApi.Services
             if(userHasQualification != null){
                 //error
                 //user cant have the same qualification twice.
-                sr.HelperMethod(409, "The user already have the qualification.", false);
+                sr.HelperMethod(409, "User already have the qualification.", false);
                 return sr;
             }
 
@@ -535,24 +449,10 @@ namespace LifeLongApi.Services
             return sr;
         }
         
-        private bool ValidateQualificationYears(int startYear, int endYear, string qualificationType, out string message){
-            if(startYear > endYear){
-                message = "Start year cannot be greater than end year.";
-                return false;
-            }else if(startYear == endYear){
-                message = "End year cannot be the same as start year.";
-                return false;
-            }else if(((startYear + 1) == endYear || (startYear + 2) == endYear)  && !qualificationType.Contains("Master")){
-                message = "End year cannot be one year after start year except for qualifications with master degree.";
-                return false;
-            }else if ((startYear + 3) == endYear)
-            {
-                message = "Please select a valid start year and end year.";
-                return false;
-            }
-            message = "";
-            return true;
-        }
+        
+
+
+
 
         public async Task<ServiceResponse<List<WorkExperienceResponseDto>>> GetUserWorkExperiencesAsync(string username)
         {
@@ -581,6 +481,7 @@ namespace LifeLongApi.Services
         //The term "friends" is used cos they have mutual interest(s).
         public async Task<ServiceResponse<List<FriendDto>>> GetUserFriendsAsync(string username)
         {
+            List<FriendDto> friends;
             var sr = new ServiceResponse<List<FriendDto>>();
             //get user
             var user = await GetUserByUsernameAsync(username);
@@ -594,77 +495,172 @@ namespace LifeLongApi.Services
                 return sr;
             }
 
-            //init variable
-            List<FriendDto> friends = new List<FriendDto>();
-
             //find out if the user is a mentor or a mentee
             if(await _userManager.IsInRoleAsync(user.Data, "Mentor")){
                 //User is a mentor.
-                //get all mentee being mentored by this user
-                var menteesRelationship = await _followRepo.GetAllMenteeRelationshipAsync(user.Data.Id);
+                //get all mentorship info for user
+                var mentorshipsInfo = await _followRepo.GetAllMentorshipInfoForMentor(user.Data.Id);
+                //get unique mentorship info
+                var uniqueMentorshipInfo = mentorshipsInfo.GroupBy(f => f.MenteeId)
+                                                          .Select(m => m.FirstOrDefault())
+                                                          .ToList();
 
-                friends = _mapper.Map<List<FriendDto>>(menteesRelationship);
-                friends.ForEach(m => m.MutualInterests = _mapper
-                                                                .Map<List<MutualInterestDto>>(menteesRelationship
-                                                                                                    .Where(mr => mr.User.UserName == m.UserName)
-                                                                                                    .Select(f => f.Topic)
-                                                                                                    .ToList()
-                                                                )
-                        );
+                friends = _mapper.Map<List<MentorFriendDto>>(uniqueMentorshipInfo)
+                                 .Cast<FriendDto>()
+                                 .ToList();
+                friends.ForEach(async m =>
+                    {
+                        //Find the mentorship info that contains friend username.
+                        var mentorshipInfo = uniqueMentorshipInfo.Find(p => p.Mentee.UserName == m.User.Username);
+                        m.MutualInterests = await GetAllMentorshipMutualInterestAsync(user.Data.Id, mentorshipInfo.MenteeId);
+                    }
+                );
 
             }else{
                 //User is a mentee.
-                //get mentors that are mentoring this user.
-                var mentorsRelationship = await _followRepo.GetAllMentorRelationshipAsync(user.Data.Id);
-                friends = _mapper.Map<List<FriendDto>>(mentorsRelationship);
-                friends.ForEach(m => m.MutualInterests = _mapper
-                                                                .Map<List<MutualInterestDto>>(mentorsRelationship
-                                                                                                    .Where(mr => mr.Follower.UserName == m.UserName)
-                                                                                                    .Select(f => f.Topic)
-                                                                                                    .ToList()
-                                                                )
-                        );
+                //get all mentorship info for user
+                var mentorshipsInfo = await _followRepo.GetAllMentorshipInfoForMentee(user.Data.Id);
+                //get unique mentorship info
+                var uniqueMentorshipInfo = mentorshipsInfo.GroupBy(f => f.MentorId)
+                                                          .Select(m => m.FirstOrDefault())
+                                                          .ToList();
+                friends = _mapper.Map<List<MenteeFriendDto>>(uniqueMentorshipInfo)
+                                 .Cast<FriendDto>()
+                                 .ToList();
+                friends.ForEach(async m => //Find the mentorship info that contains friend username.
+                {
+                    //Find the mentorship info that contains friend username.
+                    var mentorshipInfo = uniqueMentorshipInfo.Find(p => p.Mentor.UserName == m.User.Username);
+                    m.MutualInterests = await GetAllMentorshipMutualInterestAsync(user.Data.Id, mentorshipInfo.MenteeId);
+                });
             }
 
-            
             sr.Data = friends;
             sr.Code = 200;
             sr.Success = true;
             return sr;
         }
 
-        public async Task<ServiceResponse<List<FollowResponseDto>>> GetMentorshipRequestsAsync(string mentorUsername)
+        public async Task<ServiceResponse<List<UnAttendedRequestDto>>> GetMentorshipRequestsAsync(string mentorUsername)
         {
-            var sr = new ServiceResponse<List<FollowResponseDto>>();
+            List<Follow> requests;
+            List<UnAttendedRequestDto> mentorshipRequests;
+            var sr = new ServiceResponse<List<UnAttendedRequestDto>>();
             //get user
             var user = await GetUserByUsernameAsync(mentorUsername);
             if (user.Data == null)
             {
                 //user not found
                 //return error message gotten
-                sr.Code = 404;
-                sr.Success = false;
-                sr.Message = user.Message;
+                sr.HelperMethod(404, user.Message, false);
                 return sr;
             }
-
-            var requests= await _followRepo.GetMentorshipRequestsForUserAsync(user.Data.Id);
-            // if(requests.Count == 0){
-            //     //user not found
-            //     //return error message gotten
-            //     sr.Code = 204;
-            //     sr.Success = true;
-            //     sr.Data = new List<FollowResponseDto>();
-            //     return sr;
-            // }
-
-            var mentorshipRequests = _mapper.Map<List<FollowResponseDto>>(requests);
+            
+            //find out if user is a mentor or mentee so as to know what response object to return.
+            if(await _userManager.IsInRoleAsync(user.Data, "Mentor")){
+                requests = await _followRepo.GetMentorshipRequestsForMentorAsync(user.Data.Id);
+                // if(requests.Count == 0){
+                //     //to return an emppty lis or not
+                //     //return error message gotten
+                //     sr.Code = 204;
+                //     sr.Success = true;
+                //     sr.Data = new List<FollowResponseDto>();
+                //     return sr;
+                // }
+                mentorshipRequests = _mapper.Map<List<UnAttendedRequestForMentorDto>>(requests)
+                                            .Cast<UnAttendedRequestDto>()
+                                            .ToList();
+            }else{
+                requests = await _followRepo.GetSentMentorshipRequestsForMenteeAsync(user.Data.Id);
+                mentorshipRequests = _mapper.Map<List<UnAttendedRequestForMenteeDto>>(requests)
+                                            .Cast<UnAttendedRequestDto>()
+                                            .ToList(); ;
+            }
+           
 
             sr.Data = mentorshipRequests;
             sr.Code = 200;
             sr.Success = true;
             return sr;
         }
-    
+
+        public async Task<ServiceResponse<List<UnAttendedRequestDto>>> GetFriendshipInfoAsync(string mentorUsername,
+                                                                                              string menteeUsername)
+        {
+            List<Follow> mentorshipInfo;
+            //List<UnAttendedRequestDto> mentorshipRequests;
+            var sr = new ServiceResponse<List<UnAttendedRequestDto>>();
+            //get user
+            var mentor = await GetUserByUsernameAsync(mentorUsername);
+            var mentee = await GetUserByUsernameAsync(menteeUsername);
+            if (mentor.Data == null || mentee.Data == null)
+            {
+                //user not found
+                //return error message gotten
+                sr.HelperMethod(404, "One of the usernames provided does not exist.", false);
+                return sr;
+            }
+
+            //get friendship info
+            mentorshipInfo = await _followRepo.GetAllMentorshipInfoBetweenUsersAsync(mentor.Data.Id, mentee.Data.Id);
+
+            //sr.Data = mentorshipRequests;
+            sr.Code = 200;
+            sr.Success = true;
+            return sr;
+        }
+
+
+
+
+
+
+
+        public async Task<List<MutualInterestDto>> GetAllMentorshipMutualInterestAsync(int mentorId, int menteeId)
+        {
+            List<Follow> mentorshipInfo;
+            //get friendship info
+            mentorshipInfo = await _followRepo.GetAllMentorshipInfoBetweenUsersAsync(mentorId, menteeId);
+            var mutualInterests = _mapper.Map<List<MutualInterestDto>>(mentorshipInfo.Select(mi => mi.Topic).ToList());
+            return mutualInterests;
+        }
+
+        private bool ValidateQualificationYears(int startYear, int endYear, string qualificationType, out string message)
+        {
+            if (startYear > endYear)
+            {
+                message = "Start year cannot be greater than end year.";
+                return false;
+            }
+            else if (startYear == endYear)
+            {
+                message = "End year cannot be the same as start year.";
+                return false;
+            }
+            else if (!qualificationType.Contains("Master"))
+            {
+                var yearNumber = "";
+                message = $"End year cannot be {yearNumber} year after start year except for qualifications with master degree.";
+                if ((startYear + 1) == endYear)
+                {
+                    message = "End year cannot be one year after start year except for qualifications with master degree.";
+                    return false;
+                }
+                else if ((startYear + 2) == endYear)
+                {
+                    message = $"End year cannot be two years after start year except for qualifications with master degree.";
+                    return false;
+                }
+            }
+            else if ((startYear + 3) == endYear)
+            {
+                message = "Please select a valid start year and end year.";
+                return false;
+            }
+            message = "";
+            return true;
+        }
+
+        
     }
 }

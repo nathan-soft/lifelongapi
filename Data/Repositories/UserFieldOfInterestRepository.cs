@@ -34,6 +34,7 @@ namespace LifeLongApi.Data.Repositories
             var fieldOfInterests = await context.Set<UserFieldOfInterest>()
                                 .Where(ufoi => ufoi.UserId == userId)
                                 .Include(ufoi => ufoi.Topic)
+                                .OrderBy(f => f.Topic.Name)
                                 .ToListAsync();
 
             return fieldOfInterests;
@@ -52,7 +53,7 @@ namespace LifeLongApi.Data.Repositories
             }
         }
 
-        public async Task<List<AppUser>> GetUsersForFieldOfInterestAsync(int fieldOfInterestId)
+        public async Task<List<AppUser>> GetUsersByFieldOfInterestAsync(int fieldOfInterestId)
         {
             var users = await context.Set<UserFieldOfInterest>()
                                 .Where(foi => foi.TopicId == fieldOfInterestId)
@@ -64,11 +65,11 @@ namespace LifeLongApi.Data.Repositories
             foreach (var user in users)
             {
                 if(_userManager.IsInRoleAsync(user, "Mentor").Result){
-                    var menteesRelationships = await _followRepo.GetAllMenteeRelationshipAsync(user.Id);
-                    var uniqueMentees = menteesRelationships.GroupBy(m => m.UserId)
+                    var menteesRelationships = await _followRepo.GetAllMentorshipInfoForMentor(user.Id);
+                    var uniqueMentees = menteesRelationships.GroupBy(m => m.MenteeId)
                                                             .Select(i => i.FirstOrDefault())
                                                             .ToList();
-                    user.Followers = uniqueMentees ;
+                    user.Mentees = uniqueMentees ;
                     user.UserFieldOfInterests = await GetFieldOfInterestsForUserAsync(user.Id);
                     mentors.Add(user);
                 }

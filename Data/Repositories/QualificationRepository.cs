@@ -9,9 +9,11 @@ namespace LifeLongApi.Data.Repositories
     public class QualificationRepository : GenericRepository<Qualification>, IQualificationRepository
     {
         public QualificationRepository(IdentityAppContext context) : base(context) { }
+
         public async Task<List<Qualification>> GetUserQualificationsAsync(int userId){
             return await context.Set<Qualification>()
                                 .Where(q => q.UserId == userId)
+                                .OrderByDescending(qi => qi.EndYear)
                                 .ToListAsync();
         }
 

@@ -11,20 +11,19 @@ namespace LifeLongApi.Data.Repositories
     {
         public FollowRepository(IdentityAppContext context) : base(context) { }
 
-        //gets all mentees who are currently receiving mentorship from mentor
-        public async Task<List<Follow>> GetAllMenteeRelationshipAsync(int mentorId)
+        public async Task<List<Follow>> GetAllMentorshipInfoForMentor(int mentorId)
         {
             return await context.Set<Follow>()
-                                        .Where(m => m.FollowingMentorId == mentorId
+                                        .Where(m => m.MentorId == mentorId
                                                     && m.Status == AppHelper.FollowStatus.CONFIRMED.ToString())
                                         .ToListAsync();
         }
 
-        //gets all mentor who are mentoring this mentee.
-        public async Task<List<Follow>> GetAllMentorRelationshipAsync(int menteeId)
+        public async Task<List<Follow>> GetAllMentorshipInfoForMentee(int menteeId)
         {
+            //returns a list of unique mentors providing guidiance to mentee.
             return await context.Set<Follow>()
-                                        .Where(m => m.UserId == menteeId 
+                                        .Where(m => m.MenteeId == menteeId 
                                                     && m.Status == AppHelper.FollowStatus.CONFIRMED.ToString())
                                         .ToListAsync();
         }
@@ -36,29 +35,47 @@ namespace LifeLongApi.Data.Repositories
                                         .ToListAsync();
         }
 
-        public async Task<List<Follow>> GetMentorshipRequestsForUserAsync(int mentorId)
+        public async Task<List<Follow>> GetMentorshipRequestsForMentorAsync(int mentorId)
         {
             return await context.Set<Follow>()
-                                        .Where(m => m.FollowingMentorId == mentorId
+                                        .Where(m => m.MentorId == mentorId
                                                     && m.Status != AppHelper.FollowStatus.CONFIRMED.ToString())
                                         .ToListAsync();
         }
 
-        public List<int> GetMenteesId(int mentorId)
-        {
-            return  GetAllMenteeRelationshipAsync(mentorId)
-                                        .Result
-                                        .GroupBy(g => g.UserId).Select(x => x.FirstOrDefault().UserId)
-                                        .ToList();
-        }
-
-        public async Task<Follow> GetFollowRelationshipAsync(int menteeId, int mentorId, int topicId)
+        public async Task<List<Follow>> GetSentMentorshipRequestsForMenteeAsync(int menteeId)
         {
             return await context.Set<Follow>()
-                                        .Where(fr => fr.UserId == menteeId
-                                                            && fr.FollowingMentorId == mentorId
+                                        .Where(m => m.MenteeId == menteeId
+                                                    && m.Status != AppHelper.FollowStatus.CONFIRMED.ToString())
+                                        .ToListAsync();
+        }
+
+        public async Task<List<int>> GetMenteesIdAsync(int mentorId)
+        {
+            var FollowInfo =  await GetAllMentorshipInfoForMentor(mentorId);
+            return FollowInfo.GroupBy(g => g.MenteeId)
+                             .Select(x => x.FirstOrDefault().MenteeId)
+                             .ToList();
+        }
+
+        public async Task<Follow> GetMentorshipInfo(int menteeId, int mentorId, int topicId)
+        {
+            return await context.Set<Follow>()
+                                        .Where(fr => fr.MenteeId == menteeId
+                                                            && fr.MentorId == mentorId
                                                             && fr.TopicId == topicId)
                                         .FirstOrDefaultAsync();
         }
+
+        public async Task<List<Follow>> GetAllMentorshipInfoBetweenUsersAsync(int mentorId, int menteeId)
+        {
+            return await context.Set<Follow>()
+                                       .Where(fr => fr.MenteeId == menteeId
+                                                            && fr.MentorId == mentorId
+                                                            && fr.Status == AppHelper.FollowStatus.CONFIRMED.ToString())
+                                       .ToListAsync();
+        }
+        
     }
 }

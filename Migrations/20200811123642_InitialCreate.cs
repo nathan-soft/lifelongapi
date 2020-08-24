@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace LifeLongApi.Migrations
 {
-    public partial class InitialCommit : Migration
+    public partial class InitialCreate : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -69,6 +69,38 @@ namespace LifeLongApi.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_SubCategories", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Appointment",
+                columns: table => new
+                {
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    CreatedOn = table.Column<DateTime>(nullable: false),
+                    UpdatedOn = table.Column<DateTime>(nullable: false),
+                    MentorId = table.Column<int>(nullable: false),
+                    MenteeId = table.Column<int>(nullable: false),
+                    Title = table.Column<string>(nullable: false),
+                    Description = table.Column<string>(nullable: true),
+                    Status = table.Column<string>(nullable: false),
+                    DateAndTime = table.Column<DateTime>(nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Appointment", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Appointment_AspNetUsers_MenteeId",
+                        column: x => x.MenteeId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.NoAction);
+                    table.ForeignKey(
+                        name: "FK_Appointment_AspNetUsers_MentorId",
+                        column: x => x.MentorId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -155,6 +187,37 @@ namespace LifeLongApi.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Notification",
+                columns: table => new
+                {
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    CreatedOn = table.Column<DateTime>(nullable: false),
+                    UpdatedOn = table.Column<DateTime>(nullable: false),
+                    CreatedById = table.Column<int>(nullable: false),
+                    CreatedForId = table.Column<int>(nullable: false),
+                    Message = table.Column<string>(nullable: false),
+                    IsSeen = table.Column<bool>(nullable: false),
+                    Type = table.Column<string>(nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Notification", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Notification_AspNetUsers_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Notification_AspNetUsers_CreatedForId",
+                        column: x => x.CreatedForId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.NoAction);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Qualifications",
                 columns: table => new
                 {
@@ -198,6 +261,25 @@ namespace LifeLongApi.Migrations
                         name: "FK_Topics_Categories_CategoryId",
                         column: x => x.CategoryId,
                         principalTable: "Categories",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Reminder",
+                columns: table => new
+                {
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    AppointmentId = table.Column<int>(nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Reminder", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Reminder_Appointment_AppointmentId",
+                        column: x => x.AppointmentId,
+                        principalTable: "Appointment",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -251,19 +333,27 @@ namespace LifeLongApi.Migrations
                 name: "Follows",
                 columns: table => new
                 {
-                    UserId = table.Column<int>(nullable: false),
-                    FollowingMentorId = table.Column<int>(nullable: false),
-                    TopicId = table.Column<int>(nullable: false),
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     CreatedOn = table.Column<DateTime>(nullable: false),
                     UpdatedOn = table.Column<DateTime>(nullable: false),
+                    MenteeId = table.Column<int>(nullable: false),
+                    MentorId = table.Column<int>(nullable: false),
+                    TopicId = table.Column<int>(nullable: false),
                     Status = table.Column<string>(nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Follows", x => new { x.UserId, x.FollowingMentorId, x.TopicId });
+                    table.PrimaryKey("PK_Follows", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Follows_AspNetUsers_FollowingMentorId",
-                        column: x => x.FollowingMentorId,
+                        name: "FK_Follows_AspNetUsers_MenteeId",
+                        column: x => x.MenteeId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.NoAction);
+                    table.ForeignKey(
+                        name: "FK_Follows_AspNetUsers_MentorId",
+                        column: x => x.MentorId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -273,12 +363,6 @@ namespace LifeLongApi.Migrations
                         principalTable: "Topics",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Follows_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateTable(
@@ -345,6 +429,16 @@ namespace LifeLongApi.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_Appointment_MenteeId",
+                table: "Appointment",
+                column: "MenteeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Appointment_MentorId",
+                table: "Appointment",
+                column: "MentorId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
                 table: "AspNetRoleClaims",
                 column: "RoleId");
@@ -389,9 +483,9 @@ namespace LifeLongApi.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Follows_FollowingMentorId",
+                name: "IX_Follows_MentorId",
                 table: "Follows",
-                column: "FollowingMentorId");
+                column: "MentorId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Follows_TopicId",
@@ -399,9 +493,31 @@ namespace LifeLongApi.Migrations
                 column: "TopicId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Follows_MenteeId_MentorId_TopicId",
+                table: "Follows",
+                columns: new[] { "MenteeId", "MentorId", "TopicId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notification_CreatedById",
+                table: "Notification",
+                column: "CreatedById");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notification_CreatedForId",
+                table: "Notification",
+                column: "CreatedForId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Qualifications_UserId_SchoolName_QualificationType_Major",
                 table: "Qualifications",
                 columns: new[] { "UserId", "SchoolName", "QualificationType", "Major" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Reminder_AppointmentId",
+                table: "Reminder",
+                column: "AppointmentId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -447,7 +563,13 @@ namespace LifeLongApi.Migrations
                 name: "Follows");
 
             migrationBuilder.DropTable(
+                name: "Notification");
+
+            migrationBuilder.DropTable(
                 name: "Qualifications");
+
+            migrationBuilder.DropTable(
+                name: "Reminder");
 
             migrationBuilder.DropTable(
                 name: "SubCategories");
@@ -460,6 +582,9 @@ namespace LifeLongApi.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
+
+            migrationBuilder.DropTable(
+                name: "Appointment");
 
             migrationBuilder.DropTable(
                 name: "Topics");

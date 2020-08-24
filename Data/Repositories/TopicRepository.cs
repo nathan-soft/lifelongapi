@@ -11,7 +11,7 @@ namespace LifeLongApi.Data.Repositories
 
         public async Task<Topic> GetByNameAsync(string fieldOfInterest)
         {
-            return await context.Set<Topic>().FirstOrDefaultAsync(f => f.Name.ToLower() == fieldOfInterest.ToLower());
+            return await context.Set<Topic>().FirstOrDefaultAsync(f => f.Name.ToLower().Contains(fieldOfInterest.ToLower()));
         }
     }
 }

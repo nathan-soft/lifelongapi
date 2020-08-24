@@ -67,10 +67,11 @@ namespace LifeLongApi.Services
         public async Task<ServiceResponse<CategoryDto>> AddCategoryAsync(string categoryName){
             var category = await _categoryRepo.GetByNameAsync(categoryName);
             var sr = new ServiceResponse<CategoryDto>();
-            if (category == null)
+            if (category != null)
             {
-                sr.Code = StatusCodes.Status404NotFound;
+                sr.Code = StatusCodes.Status409Conflict;
                 sr.Success = false;
+                sr.Message = "Category already exists.";
             }else{
                 var newCategory = new Category
                 {
