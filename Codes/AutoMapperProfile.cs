@@ -20,7 +20,7 @@ namespace LifeLongApi.Codes
                         .ForMember(dest => dest.MenteesCount, opt => opt.MapFrom(src => src.Mentees.Count));
             CreateMap<Appointment, AppointmentResponseDto>()
                 .ForPath(dest => dest.Mentee.FullName,
-                           opt => opt.MapFrom(src => $"{src.Mentee.FirstName} {src.Mentee.FirstName}"))
+                           opt => opt.MapFrom(src => $"{src.Mentee.FirstName} {src.Mentee.LastName}"))
                 .ForPath(dest => dest.Mentee.Username, opt => opt.MapFrom(src => src.Mentee.UserName));
             CreateMap<AppointmentDto, Appointment>();
             CreateMap<QualificationDto, Qualification>();

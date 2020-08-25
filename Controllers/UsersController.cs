@@ -365,12 +365,12 @@ namespace LifeLongApi.Controllers
         }
 
 
-        [HttpGet("{mentorUsername}/appointments")]
-        public async Task<ApiResponseDto> GetMentorAppointmentsAsync(string mentorUsername)
+        [HttpGet("{mentorUsername}/appointments/{appointmentStatus}")]
+        public async Task<ApiResponseDto> GetMentorAppointmentsAsync(string mentorUsername, string appointmentStatus)
         {
             try
             {
-                var response = await _appointmentService.GetMentorsAppointmentsAsync(mentorUsername);
+                var response = await _appointmentService.GetMentorsAppointmentsAsync(mentorUsername, appointmentStatus);
                 //set status code.
                 HttpContext.Response.StatusCode = response.Code;
 

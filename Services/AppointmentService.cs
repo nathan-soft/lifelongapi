@@ -22,7 +22,7 @@ namespace LifeLongApi.Services
         Task<ServiceResponse<AppointmentResponseDto>> DeleteAppointmentAsync(int appointmentId);
         Task<ServiceResponse<AppointmentResponseDto>> EditAppointmentAsync(int appointmentId, AppointmentDto appointmentCreds);
         Task<ServiceResponse<AppointmentResponseDto>> GetAppointmentAsync(int appointmentId);
-        Task<ServiceResponse<List<AppointmentResponseDto>>> GetMentorsAppointmentsAsync(string username, AppointmentStatus status = AppointmentStatus.ALL);
+        Task<ServiceResponse<List<AppointmentResponseDto>>> GetMentorsAppointmentsAsync(string username, string appointmentStatus);
     }
 
     public class AppointmentService : IAppointmentService
@@ -81,8 +81,8 @@ namespace LifeLongApi.Services
                           + "} on <b>"
                           + TimeZoneInfo.ConvertTime(appointment.DateAndTime,
                                                      TimeZoneInfo.FindSystemTimeZoneById("W. Central Africa Standard Time")).ToOrdinalWords()
-                          + "</b>"
-                          + "time is : <b>" 
+                          + ".</b>"
+                          + "Time is : <b>" 
                           + TimeZoneInfo.ConvertTime(appointment.DateAndTime,
                                                      TimeZoneInfo.FindSystemTimeZoneById("W. Central Africa Standard Time")).ToShortTimeString()
                           + "</b>";
@@ -118,9 +118,10 @@ namespace LifeLongApi.Services
         }
 
         public async Task<ServiceResponse<List<AppointmentResponseDto>>> GetMentorsAppointmentsAsync(string username,
-            AppointmentStatus status = AppointmentStatus.ALL)
+            string appointmentStatus)
         {
             var sr = new ServiceResponse<List<AppointmentResponseDto>>();
+
             //verify user exists
             var foundMentor = await _userManager.FindByNameAsync(username);
             if (foundMentor == null)
@@ -129,16 +130,23 @@ namespace LifeLongApi.Services
                 return sr;
             }
 
-            var userAppointments = new List<Appointment>();
+            if (string.IsNullOrEmpty(appointmentStatus)) 
+            {
+                sr.HelperMethod(404, "Appointment status is required.", false);
+                return sr;
+            }
 
-            if (status.ToString() == AppointmentStatus.ALL.ToString())
+            if (appointmentStatus.ToUpper() != AppointmentStatus.PENDING.ToString()
+                || appointmentStatus.ToUpper() != AppointmentStatus.MISSED.ToString())
             {
-                userAppointments = await _appointmentRepo.GetAllMentorAppointmentsAsync(foundMentor.Id);
+                sr.HelperMethod(404, "Invalid appointment status.", false);
+                return sr;
             }
-            else
-            {
-                userAppointments = await _appointmentRepo.GetMentorAppointmentsByTypeAsync(foundMentor.Id, status);
-            }
+
+            var userAppointments = new List<Appointment>();
+            Enum.TryParse(appointmentStatus.ToUpper(), out AppointmentStatus status);
+            userAppointments = await _appointmentRepo.GetMentorAppointmentsByTypeAsync(foundMentor.Id, status);
+            
 
             sr.Code = StatusCodes.Status200OK;
             sr.Data = _mapper.Map<List<AppointmentResponseDto>>(userAppointments);
@@ -170,7 +178,13 @@ namespace LifeLongApi.Services
                 return sr;
             }
 
+            //get appointment
             var appointment = await _appointmentRepo.GetByIdAsync(appointmentId);
+            if (appointment.Mentee.UserName != appointmentCreds.MenteeUsername)
+            {
+                sr.HelperMethod(400, "The 'Mentee Username' provided does not match with the one in db.", false);
+                return sr;
+            }
 
             if (appointment.DateAndTime != dateTimeVal.ToUniversalTime())
             {
@@ -179,11 +193,9 @@ namespace LifeLongApi.Services
                 appointmentStatus = AppointmentStatus.POSTPONED.ToString();
             }
 
-            appointment = _mapper.Map<Appointment>(appointmentCreds);
             //Set Values
-            appointment.Id = appointmentId;
-            appointment.MentorId = foundMentor.Id;
-            appointment.MenteeId = foundMentee.Id;
+            appointment.Title = appointmentCreds.Title;
+            appointment.Description = appointmentCreds.Description;
             appointment.DateAndTime = dateTimeVal.ToUniversalTime();
             appointment.Status = appointmentStatus;
             //save edited record to db.
