@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
 using LifeLongApi.Dtos;
@@ -40,6 +41,8 @@ namespace LifeLongApi.Controllers
 
                 if (response.Success)
                 {
+                    //set location of new resource.
+                    HttpContext.Response.Headers.Add("Location", $"{Request.Host}/api/appointments/{response.Data.Id}");
                     //return data.
                     _apiOkResponse.Data = response.Data;
                     return _apiOkResponse;

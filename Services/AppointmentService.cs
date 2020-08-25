@@ -93,7 +93,7 @@ namespace LifeLongApi.Services
 
             //return newly created resource
             sr.Code = 201;
-            sr.Data = _mapper.Map<AppointmentResponseDto>(appointments.OrderByDescending(a => a.Id).Last());
+            sr.Data = _mapper.Map<AppointmentResponseDto>(appointments.OrderByDescending(a => a.Id).First());
             sr.Success = true;
 
             return sr;
@@ -132,19 +132,26 @@ namespace LifeLongApi.Services
 
             if (string.IsNullOrEmpty(appointmentStatus)) 
             {
-                sr.HelperMethod(404, "Appointment status is required.", false);
-                return sr;
-            }
-
-            if (appointmentStatus.ToUpper() != AppointmentStatus.PENDING.ToString()
-                || appointmentStatus.ToUpper() != AppointmentStatus.MISSED.ToString())
-            {
-                sr.HelperMethod(404, "Invalid appointment status.", false);
+                sr.HelperMethod(400, "Appointment status is required.", false);
                 return sr;
             }
 
             var userAppointments = new List<Appointment>();
-            Enum.TryParse(appointmentStatus.ToUpper(), out AppointmentStatus status);
+            var validStatus = Enum.TryParse(appointmentStatus.ToUpper(), out AppointmentStatus status);
+
+            if (!validStatus)
+            {
+                sr.HelperMethod(400, "Invalid appointment status.", false);
+                return sr;
+            }
+
+            if (status != AppointmentStatus.PENDING && status != AppointmentStatus.MISSED)
+            {
+                sr.HelperMethod(400, "Invalid appointment status.", false);
+                return sr;
+            }
+
+
             userAppointments = await _appointmentRepo.GetMentorAppointmentsByTypeAsync(foundMentor.Id, status);
             
 

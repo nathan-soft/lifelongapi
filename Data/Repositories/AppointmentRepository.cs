@@ -30,17 +30,22 @@ namespace LifeLongApi.Data.Repositories
         public async Task<List<Appointment>> GetMentorAppointmentsByTypeAsync(int mentorId, AppointmentStatus status)
         {
             IQueryable<Appointment> userAppointments;
-            userAppointments = context.Set<Appointment>()
-                                .Where(a => a.MentorId == mentorId
-                                            && a.Status == status.ToString());
+           
             if(status == AppointmentStatus.PENDING)
             {
                 userAppointments = context.Set<Appointment>()
                                 .Where(a => a.MentorId == mentorId
                                             && a.Status == status.ToString()
-                                            && a.Status == AppointmentStatus.POSTPONED.ToString());
+                                            || a.Status == AppointmentStatus.POSTPONED.ToString());
             }
-                return await userAppointments.ToListAsync();
+            else
+            {
+                userAppointments = context.Set<Appointment>()
+                               .Where(a => a.MentorId == mentorId
+                                           && a.Status == status.ToString());
+            }
+            
+            return await userAppointments.ToListAsync();
         }
     }
 }
