@@ -21,7 +21,7 @@ namespace LifeLongApi.Data.Repositories
 
         public async Task<List<Follow>> GetAllMentorshipInfoForMentee(int menteeId)
         {
-            //returns a list of unique mentors providing guidiance to mentee.
+            //returns a list of mentors providing guidiance to mentee.(not unique)
             return await context.Set<Follow>()
                                         .Where(m => m.MenteeId == menteeId 
                                                     && m.Status == AppHelper.FollowStatus.CONFIRMED.ToString())
@@ -68,7 +68,7 @@ namespace LifeLongApi.Data.Repositories
                                         .FirstOrDefaultAsync();
         }
 
-        public async Task<List<Follow>> GetAllMentorshipInfoBetweenUsersAsync(int mentorId, int menteeId)
+        public async Task<List<Follow>> GetOngoingMentorshipInfoBetweenUsersAsync(int mentorId, int menteeId)
         {
             return await context.Set<Follow>()
                                        .Where(fr => fr.MenteeId == menteeId
@@ -76,6 +76,14 @@ namespace LifeLongApi.Data.Repositories
                                                             && fr.Status == AppHelper.FollowStatus.CONFIRMED.ToString())
                                        .ToListAsync();
         }
-        
+
+        public async Task<List<Follow>> GetUsersRelationshipInfoAsync(int mentorId, int menteeId)
+        {
+            return await context.Set<Follow>()
+                                       .Where(fr => fr.MenteeId == menteeId
+                                                            && fr.MentorId == mentorId)
+                                       .ToListAsync();
+        }
+
     }
 }

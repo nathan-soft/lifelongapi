@@ -1,3 +1,4 @@
+using System;
 using AutoMapper;
 using LifeLongApi.Codes;
 using LifeLongApi.Dtos;
@@ -17,18 +18,32 @@ namespace LifeLongApi.Codes
             // .ForMember(dest => dest.UserFieldOfInterests, opt => opt.Ignore());
             CreateMap<AppUser, ApiOkResponseDto>().ReverseMap();
             CreateMap<AppUser, SearchResponseDto>()
+                        .ForPath(dest => dest.User.Username, opt => opt.MapFrom(src => src.UserName))
+                        .ForPath(dest => dest.User.FullName, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"))
+                        .ForMember(dest => dest.Location,
+                                   opt => opt.MapFrom(src => $"{src.City}.{src.State}.{src.Country}"))
                         .ForMember(dest => dest.MenteesCount, opt => opt.MapFrom(src => src.Mentees.Count));
             CreateMap<Appointment, AppointmentResponseDto>()
                 .ForPath(dest => dest.Mentee.FullName,
                            opt => opt.MapFrom(src => $"{src.Mentee.FirstName} {src.Mentee.LastName}"))
-                .ForPath(dest => dest.Mentee.Username, opt => opt.MapFrom(src => src.Mentee.UserName));
+                .ForPath(dest => dest.Mentee.Username, opt => opt.MapFrom(src => src.Mentee.UserName))
+                .ForMember(dest => dest.DateAndTime, opt =>
+                {
+                    opt.MapFrom(src => TimeZoneInfo.ConvertTimeFromUtc(src.DateAndTime,
+                                                                TimeZoneInfo.FindSystemTimeZoneById(src.Mentor.TimeZone)));
+                });
             CreateMap<AppointmentDto, Appointment>();
             CreateMap<QualificationDto, Qualification>();
             CreateMap<Qualification, QualificationResponseDto>().ReverseMap();
             CreateMap<Notification, NotificationResponseDto>()
                 .ForPath(dest => dest.Creator.Username, opt => opt.MapFrom(src => src.CreatedBy.UserName))
                 .ForPath(dest => dest.Creator.FullName,
-                           opt => opt.MapFrom(src => $"{src.CreatedBy.FirstName} { src.CreatedBy.FirstName}"));
+                           opt => opt.MapFrom(src => $"{src.CreatedBy.FirstName} { src.CreatedBy.LastName}"))
+                .ForMember(dest => dest.CreatedOn, opt =>
+                {
+                    opt.MapFrom(src => TimeZoneInfo.ConvertTimeFromUtc(src.CreatedOn,
+                                                                TimeZoneInfo.FindSystemTimeZoneById(src.CreatedFor.TimeZone)));
+                });
             CreateMap<UserDto, ApiOkResponseDto>().ReverseMap();
             CreateMap<AppRole, RoleDto>().ReverseMap();
             CreateMap<Category, CategoryDto>().ReverseMap();
@@ -55,6 +70,8 @@ namespace LifeLongApi.Codes
                          opt => opt.MapFrom(src => $"{src.Mentor.FirstName} {src.Mentor.LastName}"))
                 .ForMember(dest => dest.Location,
                            opt => opt.MapFrom(src => $"{src.Mentor.City}.{src.Mentor.State}.{src.Mentor.Country}"));
+            CreateMap<Follow, UsersRelationshipInfoDto>()
+                .ForMember(dest => dest.TopicName, opt => opt.MapFrom(src => src.Topic.Name));
             CreateMap<WorkExperience, WorkExperienceResponseDto>()
                 .ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.User.UserName))
                 .ForMember(dest => dest.FieldOfInterestId, opt => opt.MapFrom(src => src.TopicId))

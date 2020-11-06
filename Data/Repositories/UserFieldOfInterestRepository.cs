@@ -64,12 +64,13 @@ namespace LifeLongApi.Data.Repositories
             List<AppUser> mentors = new List<AppUser>();
             foreach (var user in users)
             {
+                //find mentors among list of returned users.
                 if(_userManager.IsInRoleAsync(user, "Mentor").Result){
                     var menteesRelationships = await _followRepo.GetAllMentorshipInfoForMentor(user.Id);
                     var uniqueMentees = menteesRelationships.GroupBy(m => m.MenteeId)
                                                             .Select(i => i.FirstOrDefault())
                                                             .ToList();
-                    user.Mentees = uniqueMentees ;
+                    user.Mentees = uniqueMentees;
                     user.UserFieldOfInterests = await GetFieldOfInterestsForUserAsync(user.Id);
                     mentors.Add(user);
                 }

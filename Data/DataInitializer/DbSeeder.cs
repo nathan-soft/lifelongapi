@@ -50,7 +50,8 @@ namespace LifeLongApi.Data.DataInitializer
                 Password = "Lifelong1$",
                 PhoneNumber = "08036566809",
                 Gender = "Male",
-                Role = "Admin"
+                Role = "Admin",
+                TimeZone = TimeZoneInfo.Local.Id
                 },
                 new RegisterDto {
                 Email = "mentor@lifelong.com",
@@ -59,7 +60,8 @@ namespace LifeLongApi.Data.DataInitializer
                 Password = "Mentor1$",
                 PhoneNumber = "08055165372",
                 Gender = "Female",
-                Role = "Mentor"
+                Role = "Mentor",
+                TimeZone = TimeZoneInfo.Local.Id
                 },
                 new RegisterDto {
                 Email = "mentee@lifelong.com",
@@ -68,7 +70,8 @@ namespace LifeLongApi.Data.DataInitializer
                 Password = "Mentee1$",
                 PhoneNumber = "08140715723",
                 Gender = "Female",
-                Role = "Mentee"
+                Role = "Mentee",
+                TimeZone = TimeZoneInfo.Local.Id
                 }
             };
 

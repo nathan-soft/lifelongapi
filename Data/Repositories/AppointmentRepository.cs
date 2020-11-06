@@ -33,6 +33,7 @@ namespace LifeLongApi.Data.Repositories
            
             if(status == AppointmentStatus.PENDING)
             {
+                //get both pending and postponed appointment(s) as they are the same thing.
                 userAppointments = context.Set<Appointment>()
                                 .Where(a => a.MentorId == mentorId
                                             && a.Status == status.ToString()

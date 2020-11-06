@@ -16,6 +16,7 @@ namespace LifeLongApi.Services
         Task<ServiceResponse<string>> DeleteNotificationAsync(int notificationId);
         Task<ServiceResponse<NotificationResponseDto>> MarkNotificationAsSeenAsync(int notificationId);
         Task NewNotificationAsync(int createdBy, int createdFor, string message, NotificationType type);
+        Task<ServiceResponse<List<NotificationResponseDto>>> GetUserNotificationsAsync(string username);
     }
 
     public class NotificationService : INotificationService
@@ -24,8 +25,9 @@ namespace LifeLongApi.Services
         private readonly IMapper _mapper;
         private readonly UserManager<AppUser> _userManager;
 
-        public NotificationService(INotificationRepository notificationRepo, IMapper mapper)
+        public NotificationService(INotificationRepository notificationRepo, IMapper mapper, UserManager<AppUser> userManager)
         {
+            _userManager = userManager;
             _notificationRepo = notificationRepo;
             _mapper = mapper;
         }
@@ -59,10 +61,10 @@ namespace LifeLongApi.Services
                 return sr;
             }
 
-            var userWorkExperiences = await _notificationRepo.GetNotificationsForUserAsync(foundUser.Id);
+            var userNotifications = await _notificationRepo.GetNotificationsForUserAsync(foundUser.Id);
 
             sr.Code = StatusCodes.Status200OK;
-            sr.Data = _mapper.Map<List<NotificationResponseDto>>(userWorkExperiences);
+            sr.Data = _mapper.Map<List<NotificationResponseDto>>(userNotifications);
             sr.Success = true;
             return sr;
         }

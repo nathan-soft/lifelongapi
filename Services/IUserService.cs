@@ -40,5 +40,6 @@ namespace LifeLongApi.Services {
 
 
         Task<List<MutualInterestDto>> GetAllMentorshipMutualInterestAsync(int mentorId, int menteeId);
+        Task<ServiceResponse<List<UsersRelationshipInfoDto>>> GetUsersRelationshipInfoAsync(string mentorUsername, string menteeUsername);
     }
 }

@@ -22,7 +22,7 @@ namespace LifeLongApi.Services
         Task<ServiceResponse<AppointmentResponseDto>> DeleteAppointmentAsync(int appointmentId);
         Task<ServiceResponse<AppointmentResponseDto>> EditAppointmentAsync(int appointmentId, AppointmentDto appointmentCreds);
         Task<ServiceResponse<AppointmentResponseDto>> GetAppointmentAsync(int appointmentId);
-        Task<ServiceResponse<List<AppointmentResponseDto>>> GetMentorsAppointmentsAsync(string username, string appointmentStatus);
+        Task<ServiceResponse<List<AppointmentResponseDto>>> GetMentorAppointmentsAsync(string username, string appointmentStatus);
     }
 
     public class AppointmentService : IAppointmentService
@@ -79,12 +79,12 @@ namespace LifeLongApi.Services
                           + foundMentor.FirstName
                           + foundMentor.LastName
                           + "} on <b>"
-                          + TimeZoneInfo.ConvertTime(appointment.DateAndTime,
-                                                     TimeZoneInfo.FindSystemTimeZoneById("W. Central Africa Standard Time")).ToOrdinalWords()
+                          + TimeZoneInfo.ConvertTimeFromUtc(appointment.DateAndTime,
+                              TimeZoneInfo.FindSystemTimeZoneById(foundMentee.TimeZone)).ToOrdinalWords()
                           + ".</b>"
                           + "Time is : <b>" 
-                          + TimeZoneInfo.ConvertTime(appointment.DateAndTime,
-                                                     TimeZoneInfo.FindSystemTimeZoneById("W. Central Africa Standard Time")).ToShortTimeString()
+                          + TimeZoneInfo.ConvertTimeFromUtc(appointment.DateAndTime,
+                              TimeZoneInfo.FindSystemTimeZoneById(foundMentee.TimeZone)).ToShortTimeString()
                           + "</b>";
             await _notificationService.NewNotificationAsync(foundMentor.Id, foundMentee.Id, message, NotificationType.APPOINTMENT);
 
@@ -117,10 +117,27 @@ namespace LifeLongApi.Services
             return sr;
         }
 
-        public async Task<ServiceResponse<List<AppointmentResponseDto>>> GetMentorsAppointmentsAsync(string username,
+        public async Task<ServiceResponse<List<AppointmentResponseDto>>> GetMentorAppointmentsAsync(
+            string username,
             string appointmentStatus)
         {
             var sr = new ServiceResponse<List<AppointmentResponseDto>>();
+
+            //valid apointment status??
+            var validStatus = Enum.TryParse(appointmentStatus.ToUpper(), out AppointmentStatus status);
+
+            if (!validStatus)
+            {
+                sr.HelperMethod(400, "Invalid appointment status.", false);
+                return sr;
+            }
+
+            //status must be either pending or missed because these are the statuses known by the "Outside World".
+            if (status != AppointmentStatus.PENDING && status != AppointmentStatus.MISSED)
+            {
+                sr.HelperMethod(400, "Invalid appointment status.", false);
+                return sr;
+            }
 
             //verify user exists
             var foundMentor = await _userManager.FindByNameAsync(username);
@@ -130,28 +147,13 @@ namespace LifeLongApi.Services
                 return sr;
             }
 
-            if (string.IsNullOrEmpty(appointmentStatus)) 
-            {
-                sr.HelperMethod(400, "Appointment status is required.", false);
-                return sr;
-            }
+            // if (string.IsNullOrEmpty(appointmentStatus)) 
+            // {
+            //     sr.HelperMethod(400, "Appointment status is required.", false);
+            //     return sr;
+            // }
 
             var userAppointments = new List<Appointment>();
-            var validStatus = Enum.TryParse(appointmentStatus.ToUpper(), out AppointmentStatus status);
-
-            if (!validStatus)
-            {
-                sr.HelperMethod(400, "Invalid appointment status.", false);
-                return sr;
-            }
-
-            if (status != AppointmentStatus.PENDING && status != AppointmentStatus.MISSED)
-            {
-                sr.HelperMethod(400, "Invalid appointment status.", false);
-                return sr;
-            }
-
-
             userAppointments = await _appointmentRepo.GetMentorAppointmentsByTypeAsync(foundMentor.Id, status);
             
 
@@ -166,6 +168,7 @@ namespace LifeLongApi.Services
         {
             var sr = new ServiceResponse<AppointmentResponseDto>();
             bool isPostponed = false;
+            bool isRescheduled = false;
             string appointmentStatus = AppointmentStatus.PENDING.ToString();
 
             //verify mentor and mentee exists
@@ -195,9 +198,14 @@ namespace LifeLongApi.Services
 
             if (appointment.DateAndTime != dateTimeVal.ToUniversalTime())
             {
-                //appointment has been moved to a new date and time.
-                isPostponed = true;
-                appointmentStatus = AppointmentStatus.POSTPONED.ToString();
+                if(appointment.Status == AppointmentStatus.MISSED.ToString()){
+                    //the appointment was missed and its being rescheduled.
+                    isRescheduled = true;
+                }else{
+                    //appointment has been moved to a new date and time.
+                    isPostponed = true;
+                    appointmentStatus = AppointmentStatus.POSTPONED.ToString();
+                }
             }
 
             //Set Values
@@ -208,23 +216,33 @@ namespace LifeLongApi.Services
             //save edited record to db.
             await _appointmentRepo.UpdateAsync(appointment);
 
+            string message = "";
             if (isPostponed)
             {
                 //notify mentee of the new change.
-                var message = "Your appointment with {"
+                message = "Your appointment with {"
                               + foundMentor.FirstName
                               + foundMentor.LastName
                               + "} has been moved to <b>"
-                              + TimeZoneInfo.ConvertTime(appointment.DateAndTime,
-                                         TimeZoneInfo.FindSystemTimeZoneById("W. Central Africa Standard Time")).ToShortDateString()
+                              + TimeZoneInfo.ConvertTimeFromUtc(appointment.DateAndTime,
+                                         TimeZoneInfo.FindSystemTimeZoneById(foundMentee.TimeZone)).ToShortDateString()
                               + "</b>";
-                await _notificationService.NewNotificationAsync(foundMentor.Id,
+            }else if(isRescheduled){
+                //notify mentee of the new change.
+                message = "Your appointment with {"
+                              + foundMentor.FirstName
+                              + foundMentor.LastName
+                              + "} has been rescheduled to <b>"
+                              + TimeZoneInfo.ConvertTimeFromUtc(appointment.DateAndTime,
+                                         TimeZoneInfo.FindSystemTimeZoneById(foundMentee.TimeZone)).ToShortDateString()
+                              + "</b>";
+            }
+
+            await _notificationService.NewNotificationAsync(foundMentor.Id,
                                                                 foundMentee.Id,
                                                                 message,
                                                                 NotificationType.APPOINTMENT
                                                                 );
-            }
-
 
             //return edited resource
             sr.Code = 200;

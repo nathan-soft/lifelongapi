@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using System.Web;
 
 namespace LifeLongApi.Controllers
 {
@@ -22,15 +23,18 @@ namespace LifeLongApi.Controllers
     {
         private readonly IUserService _userService;
         private readonly IAppointmentService _appointmentService;
+        private readonly INotificationService _notificationService;
         private static ApiOkResponseDto _apiOkResponse;
         private static ApiErrorResponseDto _apiErrorResponse;
         private readonly IMapper _mapper;
 
         public UsersController(IMapper mapper, IUserService userService, IAppointmentService appointmentService,
-                    ApiOkResponseDto apiOkResponse, ApiErrorResponseDto apiErrorResponse)
+                               INotificationService notificationService, ApiOkResponseDto apiOkResponse,
+                               ApiErrorResponseDto apiErrorResponse)
         {
             _appointmentService = appointmentService;
             _userService = userService;
+            _notificationService = notificationService;
             _mapper = mapper;
             _apiErrorResponse = apiErrorResponse;
             _apiOkResponse = apiOkResponse;
@@ -165,15 +169,15 @@ namespace LifeLongApi.Controllers
                 //set status code.
                 HttpContext.Response.StatusCode = response.Code;
 
-                if (!response.Success)
-                {
-                    return _apiErrorResponse = _mapper.Map<ApiErrorResponseDto>(response);
-                }
-                else
+                if (response.Success)
                 {
                     //return data.
                     _apiOkResponse.Data = response.Data;
                     return _apiOkResponse;
+                }
+                else
+                {
+                    return _apiErrorResponse = _mapper.Map<ApiErrorResponseDto>(response);
                 }
 
             }
@@ -187,13 +191,12 @@ namespace LifeLongApi.Controllers
             }
         }
 
-        
-        
 
 
-        
-        
-        
+
+
+
+
         [HttpPost("interests")]
         public async Task<ApiResponseDto> NewFieldOfInterestForUser(UserFieldOfInterestDto userInterest)
         {
@@ -279,15 +282,46 @@ namespace LifeLongApi.Controllers
                 //set status code.
                 HttpContext.Response.StatusCode = response.Code;
 
-                if (!response.Success)
-                {
-                    return _apiErrorResponse = _mapper.Map<ApiErrorResponseDto>(response);
-                }
-                else
+                if (response.Success)
                 {
                     //return data.
                     _apiOkResponse.Data = response.Data;
                     return _apiOkResponse;
+                }
+                else
+                {
+                    return _apiErrorResponse = _mapper.Map<ApiErrorResponseDto>(response);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                //set status code.
+                HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                //log and return default custom error
+                _apiErrorResponse.Message = ex.Message;
+                return _apiErrorResponse;
+            }
+        }
+
+        [HttpGet("{username}/notifications")]
+        public async Task<ApiResponseDto> GetUserNotifications(string username)
+        {
+            try
+            {
+                var response = await _notificationService.GetUserNotificationsAsync(username);
+                //set status code.
+                HttpContext.Response.StatusCode = response.Code;
+
+                if (response.Success)
+                {
+                    //return data.
+                    _apiOkResponse.Data = response.Data;
+                    return _apiOkResponse;
+                }
+                else
+                {
+                    return _apiErrorResponse = _mapper.Map<ApiErrorResponseDto>(response);
                 }
 
             }
@@ -336,6 +370,7 @@ namespace LifeLongApi.Controllers
         [HttpGet("interests/{searchString}")]
         public async Task<ApiResponseDto> GetUsersByInterestsAsync(string searchString)
         {
+            searchString = HttpUtility.UrlDecode(searchString);
             try
             {
                 var response = await _userService.GetUsersByInterestSearchResultAsync(searchString);
@@ -365,12 +400,16 @@ namespace LifeLongApi.Controllers
         }
 
 
+
+
+
         [HttpGet("{mentorUsername}/appointments/{appointmentStatus}")]
         public async Task<ApiResponseDto> GetMentorAppointmentsAsync(string mentorUsername, string appointmentStatus)
         {
             try
             {
-                var response = await _appointmentService.GetMentorsAppointmentsAsync(mentorUsername, appointmentStatus);
+                var response = await _appointmentService.GetMentorAppointmentsAsync(mentorUsername,
+                                                                                                   appointmentStatus);
                 //set status code.
                 HttpContext.Response.StatusCode = response.Code;
 

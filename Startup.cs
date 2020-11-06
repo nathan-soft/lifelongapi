@@ -80,7 +80,7 @@ namespace LifeLongApi {
                 // User settings.
                 // options.User.AllowedUserNameCharacters =
                 // "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
-                options.User.RequireUniqueEmail = true;
+                //options.User.RequireUniqueEmail = true;
             });
 
             services.AddAuthentication (x => {

@@ -67,8 +67,17 @@ namespace LifeLongApi.Data.Repositories
         /// </summary>
         /// <param name="mentorId">The id of the mentor.</param>
         /// <param name="menteeId">The id of the mentee.</param>
-        /// <returns>A task that represents the asynchronous operation. The task result contains a list that contains info about all mentorship between a mentor and mentee.
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of all ongoing mentorship between a mentor and mentee.
         /// </returns>
-        Task<List<Follow>> GetAllMentorshipInfoBetweenUsersAsync(int mentorId, int menteeId);
+        Task<List<Follow>> GetOngoingMentorshipInfoBetweenUsersAsync(int mentorId, int menteeId);
+
+        /// <summary>
+        /// Gets info about all relationship the mentor have with the mentee, both "ongoing" mentorship and "pending" mentorship requests.
+        /// </summary>
+        /// <param name="mentorId">The id of the mentor.</param>
+        /// <param name="menteeId">The id of the mentee.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of all mentorship relations between a mentor and mentee.
+        /// </returns>
+        Task<List<Follow>> GetUsersRelationshipInfoAsync(int mentorId, int menteeId);
     }
 }

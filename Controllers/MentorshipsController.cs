@@ -159,36 +159,67 @@ namespace LifeLongApi.Controllers
             }
         }
 
-        // [HttpGet("info/{mentorUsername}/{menteeUsername}")]
-        // public async Task<ApiResponseDto> GetMentorshipInfoAsync(string mentorUsername, string menteeUsername)
-        // {
-        //     try
-        //     {
-        //         var response = await _userService.GetFriendshipInfoAsync(mentorUsername, menteeUsername);
-        //         //set status code.
-        //         HttpContext.Response.StatusCode = response.Code;
+        //[HttpGet("info/{mentorUsername}/{menteeUsername}")]
+        //public async Task<ApiResponseDto> GetMentorshipInfoAsync(string mentorUsername, string menteeUsername)
+        //{
+        //    try
+        //    {
+        //        var response = await _userService.GetFriendshipInfoAsync(mentorUsername, menteeUsername);
+        //        //set status code.
+        //        HttpContext.Response.StatusCode = response.Code;
 
-        //         if (!response.Success)
-        //         {
-        //             return _apiErrorResponse = _mapper.Map<ApiErrorResponseDto>(response);
-        //         }
-        //         else
-        //         {
-        //             //return data.
-        //             _apiOkResponse.Data = response.Data;
-        //             return _apiOkResponse;
-        //         }
+        //        if (!response.Success)
+        //        {
+        //            return _apiErrorResponse = _mapper.Map<ApiErrorResponseDto>(response);
+        //        }
+        //        else
+        //        {
+        //            //return data.
+        //            _apiOkResponse.Data = response.Data;
+        //            return _apiOkResponse;
+        //        }
 
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         //set status code.
-        //         HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        //         //log and return default custom error
-        //         _apiErrorResponse.Message = ex.Message;
-        //         return _apiErrorResponse;
-        //     }
-        // }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        //set status code.
+        //        HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        //        //log and return default custom error
+        //        _apiErrorResponse.Message = ex.Message;
+        //        return _apiErrorResponse;
+        //    }
+        //}
+
+        [HttpGet("info/{mentorUsername}/{menteeUsername}")]
+        public async Task<ApiResponseDto> GetUsersRelationshipInfoAsync(string mentorUsername, string menteeUsername)
+        {
+            try
+            {
+                var response = await _userService.GetUsersRelationshipInfoAsync(mentorUsername, menteeUsername);
+                //set status code.
+                HttpContext.Response.StatusCode = response.Code;
+
+                if (!response.Success)
+                {
+                    return _apiErrorResponse = _mapper.Map<ApiErrorResponseDto>(response);
+                }
+                else
+                {
+                    //return data.
+                    _apiOkResponse.Data = response.Data;
+                    return _apiOkResponse;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                //set status code.
+                HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                //log and return default custom error
+                _apiErrorResponse.Message = ex.Message;
+                return _apiErrorResponse;
+            }
+        }
     }
 
 

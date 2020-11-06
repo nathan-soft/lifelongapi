@@ -45,14 +45,31 @@ namespace LifeLongApi.Services
             _workExperienceRepo = workExperienceRepo;
         }
         public async Task<ServiceResponse<RegisterDto>> CreateUserAsync(RegisterDto newUser){
+            var sr = new ServiceResponse<RegisterDto>();
+
+            if (!string.IsNullOrWhiteSpace(newUser.TimeZone))
+            {
+                //validate time zone entered.
+                try
+                {
+                    TimeZoneInfo.FindSystemTimeZoneById(newUser.TimeZone);
+                }
+                catch
+                {
+                    sr.HelperMethod(400, "Please select a valid time zone.", false);
+                    return sr;
+                }
+                
+            }
+            
             var convertedUser = _mapper.Map<AppUser>(newUser);
 
             var foundUser = await _userManager.FindByEmailAsync(newUser.Email);
-            var sr = new ServiceResponse<RegisterDto>();
+            
             if (foundUser != null)
             {
                 //the email exist in db.
-                sr.Code = 409;
+                sr.Code = 400;
                 sr.Success = false;
                 sr.Message = "email address already exist.";
             }
@@ -178,12 +195,6 @@ namespace LifeLongApi.Services
             }
 
             var users = await _userFieldOfInterestRepo.GetUsersByFieldOfInterestAsync(topicCreds.Data.Id);
-            if (users.Count == 0)
-            {
-                sr.HelperMethod(404, "No Mentor found.", false);
-                return sr;
-            }
-
             var searchResult = _mapper.Map<List<SearchResponseDto>>(users);
 
             sr.Data = searchResult;
@@ -489,9 +500,7 @@ namespace LifeLongApi.Services
             {
                 //user not found
                 //return error message gotten
-                sr.Code = 404;
-                sr.Success = false;
-                sr.Message = user.Message;
+                sr.HelperMethod(404, user.Message, false);
                 return sr;
             }
 
@@ -501,6 +510,7 @@ namespace LifeLongApi.Services
                 //get all mentorship info for user
                 var mentorshipsInfo = await _followRepo.GetAllMentorshipInfoForMentor(user.Data.Id);
                 //get unique mentorship info
+                //taking the first relationship with a mentee even though there could be more.
                 var uniqueMentorshipInfo = mentorshipsInfo.GroupBy(f => f.MenteeId)
                                                           .Select(m => m.FirstOrDefault())
                                                           .ToList();
@@ -508,13 +518,31 @@ namespace LifeLongApi.Services
                 friends = _mapper.Map<List<MentorFriendDto>>(uniqueMentorshipInfo)
                                  .Cast<FriendDto>()
                                  .ToList();
-                friends.ForEach(async m =>
+                                 
+                // friends.ForEach(m =>
+                //     {
+                //         //loop through all friends,
+                //         //get the the mentorship info between the mentor and the current friend/mentee in the loop using the mentte username.
+                //         var mentorshipInfo = uniqueMentorshipInfo.Find(p => p.Mentee.UserName == m.User.Username);
+                //         //get all field of interest/topic(s) the have in common.
+                //         m.MutualInterests = GetAllMentorshipMutualInterestAsync(user.Data.Id,
+                //                                                                 mentorshipInfo.MenteeId).Result;
+                //     }
+                // );
+
+                var tt = friends.Select(async m =>
                     {
-                        //Find the mentorship info that contains friend username.
+                        //loop through all friends,
+                        //get the the mentorship info between the mentor and the current friend/mentee in the loop using the mentte username.
                         var mentorshipInfo = uniqueMentorshipInfo.Find(p => p.Mentee.UserName == m.User.Username);
-                        m.MutualInterests = await GetAllMentorshipMutualInterestAsync(user.Data.Id, mentorshipInfo.MenteeId);
+                        //get all field of interest/topic(s) the have in common.
+                        m.MutualInterests = await GetAllMentorshipMutualInterestAsync(user.Data.Id,
+                                                                  mentorshipInfo.MenteeId);
+                        return m.MutualInterests.Count;
                     }
                 );
+
+                await Task.WhenAll(tt);
 
             }else{
                 //User is a mentee.
@@ -527,12 +555,27 @@ namespace LifeLongApi.Services
                 friends = _mapper.Map<List<MenteeFriendDto>>(uniqueMentorshipInfo)
                                  .Cast<FriendDto>()
                                  .ToList();
-                friends.ForEach(async m => //Find the mentorship info that contains friend username.
-                {
-                    //Find the mentorship info that contains friend username.
-                    var mentorshipInfo = uniqueMentorshipInfo.Find(p => p.Mentor.UserName == m.User.Username);
-                    m.MutualInterests = await GetAllMentorshipMutualInterestAsync(user.Data.Id, mentorshipInfo.MenteeId);
-                });
+                                 
+                // friends.ForEach(async m => //Find the mentorship info that contains friend username.
+                // {
+                //     //Find the mentorship info that contains friend username.
+                //     var mentorshipInfo = uniqueMentorshipInfo.Find(p => p.Mentor.UserName == m.User.Username);
+                //     m.MutualInterests = await GetAllMentorshipMutualInterestAsync(user.Data.Id, mentorshipInfo.MenteeId);
+                // });
+
+                var tt = friends.Select(async m =>
+                    {
+                        //loop through all friends,
+                        //Find the mentorship info that contains friend username.
+                        var mentorshipInfo = uniqueMentorshipInfo.Find(p => p.Mentor.UserName == m.User.Username);
+                        //get all field of interest/topic(s) the have in common.
+                        m.MutualInterests = await GetAllMentorshipMutualInterestAsync(user.Data.Id,
+                                                                  mentorshipInfo.MenteeId);
+                        return m.MutualInterests.Count;
+                    }
+                );
+
+                await Task.WhenAll(tt);
             }
 
             sr.Data = friends;
@@ -602,9 +645,33 @@ namespace LifeLongApi.Services
             }
 
             //get friendship info
-            mentorshipInfo = await _followRepo.GetAllMentorshipInfoBetweenUsersAsync(mentor.Data.Id, mentee.Data.Id);
+            mentorshipInfo = await _followRepo.GetOngoingMentorshipInfoBetweenUsersAsync(mentor.Data.Id, mentee.Data.Id);
 
             //sr.Data = mentorshipRequests;
+            sr.Code = 200;
+            sr.Success = true;
+            return sr;
+        }
+
+        public async Task<ServiceResponse<List<UsersRelationshipInfoDto>>> GetUsersRelationshipInfoAsync(string mentorUsername,
+                                                                                                         string menteeUsername)
+        {
+            var sr = new ServiceResponse<List<UsersRelationshipInfoDto>>();
+            //get user
+            var mentor = await GetUserByUsernameAsync(mentorUsername);
+            var mentee = await GetUserByUsernameAsync(menteeUsername);
+            if (mentor.Data == null || mentee.Data == null)
+            {
+                //user not found
+                //return error message gotten
+                sr.HelperMethod(404, "One of the usernames provided does not exist.", false);
+                return sr;
+            }
+
+            //get mentorship relations info
+            var mentorshipInfo = await _followRepo.GetUsersRelationshipInfoAsync(mentor.Data.Id, mentee.Data.Id);
+
+            sr.Data = _mapper.Map<List<UsersRelationshipInfoDto>>(mentorshipInfo);
             sr.Code = 200;
             sr.Success = true;
             return sr;
@@ -620,7 +687,7 @@ namespace LifeLongApi.Services
         {
             List<Follow> mentorshipInfo;
             //get friendship info
-            mentorshipInfo = await _followRepo.GetAllMentorshipInfoBetweenUsersAsync(mentorId, menteeId);
+            mentorshipInfo = await _followRepo.GetOngoingMentorshipInfoBetweenUsersAsync(mentorId, menteeId);
             var mutualInterests = _mapper.Map<List<MutualInterestDto>>(mentorshipInfo.Select(mi => mi.Topic).ToList());
             return mutualInterests;
         }
