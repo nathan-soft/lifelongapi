@@ -40,11 +40,11 @@ namespace LifeLongApi.Services {
         //// <returns>Task<ServiceResponse<TokenDto>></returns>
         public async Task<ServiceResponse<TokenDto>> Login (string username, string password) {
             var sr = new ServiceResponse<TokenDto> ();
-            var user = await _userService.GetUserByUsernameAsync(username);
-            var awt = await _userManager.CheckPasswordAsync(user.Data, password);
-            if (user.Data == null || !awt) {
+            var user = await _userManager.FindByNameAsync(username);
+            var validPassword = await _userManager.CheckPasswordAsync(user, password);
+            if (user == null || !validPassword) {
                 //username does not exist.
-                sr.HelperMethod (StatusCodes.Status404NotFound, "Incorrect username or password", false);
+                return sr.HelperMethod (StatusCodes.Status404NotFound, "Incorrect username or password", false);
             } else {
                 //create jwt token.
                 var tokenString = CreateJwtToken (username, out long expiration);
@@ -55,8 +55,9 @@ namespace LifeLongApi.Services {
                 };
                 sr.Message = "Login Success.";
                 sr.Success = true;
+                return sr;
             }
-            return sr;
+            
         }
 
         ///<summary>

@@ -43,7 +43,7 @@ namespace LifeLongApi.Services
             {
                 //Create role;
                 var roleResult = await _roleManager.CreateAsync(new AppRole { Name = roleName });
-                var role = await GetRoleByNameAsync(roleName);
+                var role = await _roleManager.FindByNameAsync(roleName);
                 if(!roleResult.Succeeded){
                     //error: role not created 
                     sr.Code = 500;
@@ -52,7 +52,7 @@ namespace LifeLongApi.Services
                 }else{
                     //role created
                     sr.Code = 201;
-                    sr.Data = _mapper.Map<RoleDto>(role.Data);
+                    sr.Data = _mapper.Map<RoleDto>(role);
                     sr.Success = true;
                 }
             }

@@ -20,9 +20,11 @@ namespace LifeLongApi.Services
         private readonly IWorkExperienceRepository _workExperienceRepo;
         private readonly UserManager<AppUser> _userManager;
         private readonly ITopicRepository _topicRepo;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IMapper _mapper;
-        public WorkExperienceService(IWorkExperienceRepository workExperienceRepo, UserManager<AppUser> userManager, IMapper mapper, ITopicRepository topicRepo)
+        public WorkExperienceService(IWorkExperienceRepository workExperienceRepo, UserManager<AppUser> userManager, IMapper mapper, ITopicRepository topicRepo, IHttpContextAccessor httpContextAccessor)
         {
+            _httpContextAccessor = httpContextAccessor;
             _workExperienceRepo = workExperienceRepo;
             _mapper = mapper;
             _topicRepo = topicRepo;
@@ -74,7 +76,7 @@ namespace LifeLongApi.Services
             var sr = new ServiceResponse<WorkExperienceResponseDto>();
 
             //get user
-            var foundUser = await _userManager.FindByNameAsync(workExperience.Username);
+            var foundUser = await _userManager.FindByNameAsync(_httpContextAccessor.GetUsernameOfCurrentUser());
             if (foundUser == null)
             {
                 //user does not exist.
@@ -139,7 +141,7 @@ namespace LifeLongApi.Services
             }
 
             //get user
-            var foundUser = await _userManager.FindByNameAsync(workExperience.Username);
+            var foundUser = await _userManager.FindByNameAsync(_httpContextAccessor.GetUsernameOfCurrentUser());
             if (foundUser == null)
             {
                 //user does not exist.

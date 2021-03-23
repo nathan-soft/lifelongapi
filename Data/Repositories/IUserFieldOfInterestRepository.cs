@@ -8,7 +8,6 @@ namespace LifeLongApi.Data.Repositories
     {
         public List<int> GetFieldOfInterestIdsForUser(int userId);
         public Task<List<UserFieldOfInterest>> GetFieldOfInterestsForUserAsync(int userId);
-        Task<List<AppUser>> GetUsersByFieldOfInterestAsync(int fieldOfInterestId);
         public Task<bool> IsFieldPartOfUserInterestsAsync(int userId, int fieldOfInterestId);
     }
 }

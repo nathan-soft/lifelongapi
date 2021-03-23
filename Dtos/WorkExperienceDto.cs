@@ -5,8 +5,6 @@ namespace LifeLongApi.Dtos
     public class WorkExperienceDto
     {
         [Required]
-        public string Username { get; set; }
-        [Required]
         public string FieldOfInterest { get; set; }
         [Required]
         public string CompanyName { get; set; }

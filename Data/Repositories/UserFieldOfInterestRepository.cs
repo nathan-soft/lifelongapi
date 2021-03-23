@@ -53,30 +53,6 @@ namespace LifeLongApi.Data.Repositories
             }
         }
 
-        public async Task<List<AppUser>> GetUsersByFieldOfInterestAsync(int fieldOfInterestId)
-        {
-            var users = await context.Set<UserFieldOfInterest>()
-                                .Where(foi => foi.TopicId == fieldOfInterestId)
-                                .Select(ufi => ufi.User)
-                                //.Include(u => u.UserFieldOfInterests)
-                                .ToListAsync();
-            
-            List<AppUser> mentors = new List<AppUser>();
-            foreach (var user in users)
-            {
-                //find mentors among list of returned users.
-                if(_userManager.IsInRoleAsync(user, "Mentor").Result){
-                    var menteesRelationships = await _followRepo.GetAllMentorshipInfoForMentor(user.Id);
-                    var uniqueMentees = menteesRelationships.GroupBy(m => m.MenteeId)
-                                                            .Select(i => i.FirstOrDefault())
-                                                            .ToList();
-                    user.Mentees = uniqueMentees;
-                    user.UserFieldOfInterests = await GetFieldOfInterestsForUserAsync(user.Id);
-                    mentors.Add(user);
-                }
-            }
-            return mentors;
-        }
     }
 }
 

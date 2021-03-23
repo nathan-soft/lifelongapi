@@ -66,9 +66,6 @@ C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\LifeLon
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\LifeLongApi.pdb
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\LifeLongApi.genruntimeconfig.cache
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\Properties\serviceDependencies.json
-C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\LifeLongApi.csproj.CoreCompileInputs.cache
-C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\LifeLongApi.MvcApplicationPartsAssemblyInfo.cache
-C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\Properties\serviceDependencies.lifelongapi - Web Deploy.json
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\Humanizer.dll
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\af\Humanizer.resources.dll
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\ar\Humanizer.resources.dll
@@ -116,3 +113,16 @@ C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\zh-Hans
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\zh-Hant\Humanizer.resources.dll
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\Castle.Core.dll
 C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\Microsoft.EntityFrameworkCore.Proxies.dll
+C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\MailKit.dll
+C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\MimeKit.dll
+C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\BouncyCastle.Crypto.dll
+C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\Azure.Core.dll
+C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\Azure.Storage.Blobs.dll
+C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\Azure.Storage.Common.dll
+C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\Microsoft.Win32.SystemEvents.dll
+C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\System.Drawing.Common.dll
+C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\runtimes\win\lib\netcoreapp3.0\Microsoft.Win32.SystemEvents.dll
+C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\runtimes\unix\lib\netcoreapp3.0\System.Drawing.Common.dll
+C:\Users\SomeBody\Documents\Projects\LifeLongApi\bin\Debug\netcoreapp3.1\runtimes\win\lib\netcoreapp3.0\System.Drawing.Common.dll
+C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\LifeLongApi.csproj.CoreCompileInputs.cache
+C:\Users\SomeBody\Documents\Projects\LifeLongApi\obj\Debug\netcoreapp3.1\LifeLongApi.MvcApplicationPartsAssemblyInfo.cache

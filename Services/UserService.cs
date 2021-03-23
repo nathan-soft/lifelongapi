@@ -17,6 +17,8 @@ namespace LifeLongApi.Services
     public class UserService : IUserService
     {
         private readonly UserManager<AppUser> _userManager;
+        private readonly RoleManager<AppRole> _roleManager;
+        private readonly IUserRepository _userRepo;
         private readonly IFollowRepository _followRepo;
         private readonly ITopicService _topicService;
         private readonly IQualificationRepository _qualificationRepo;
@@ -26,6 +28,8 @@ namespace LifeLongApi.Services
         private readonly IWorkExperienceRepository _workExperienceRepo;
         private readonly IMapper _mapper;
         public UserService(UserManager<AppUser> userManager,
+                           RoleManager<AppRole> roleManager,
+                           IUserRepository userRepo,
                            IAppointmentRepository appointmentRepo,
                            IFollowRepository followRepo,
                            ITopicService topicService,
@@ -36,6 +40,8 @@ namespace LifeLongApi.Services
                            IWorkExperienceRepository workExperienceRepo)
         {
             _userManager = userManager;
+            _roleManager = roleManager;
+            _userRepo = userRepo;
             _followRepo = followRepo;
             _topicService= topicService;
             _mapper = mapper;
@@ -56,12 +62,18 @@ namespace LifeLongApi.Services
                 }
                 catch
                 {
-                    sr.HelperMethod(400, "Please select a valid time zone.", false);
-                    return sr;
+                    return sr.HelperMethod(400, "Please select a valid time zone.", false);
                 }
                 
             }
-            
+
+            bool roleExists = await _roleManager.RoleExistsAsync(newUser.Role);
+            if (!roleExists)
+            {
+                return sr.HelperMethod(400, "Role does not exist.", false);
+            }
+
+
             var convertedUser = _mapper.Map<AppUser>(newUser);
 
             var foundUser = await _userManager.FindByEmailAsync(newUser.Email);
@@ -107,7 +119,7 @@ namespace LifeLongApi.Services
                 //update the user info.
                 foundUser.FirstName = userCreds.FirstName;
                 foundUser.LastName = userCreds.LastName;
-                foundUser.Email = userCreds.Email;
+                //foundUser.Email = userCreds.Email;
                 foundUser.PhoneNumber = userCreds.PhoneNumber;
                 foundUser.Address = userCreds.Address;
                 foundUser.City = userCreds.City;
@@ -117,24 +129,32 @@ namespace LifeLongApi.Services
                 var result = await _userManager.UpdateAsync(foundUser);
                 if (result.Succeeded)
                 {
+                    var userDto = _mapper.Map<UserDto>(foundUser);
+                    var friends = await GetUserFriendsAsync(username);
+                    userDto.Friends = friends.Data;
+
                     //return userInfo
                     sr.Code = 200;
-                    sr.Data =  GetUserByUsernameWithRelationshipsAsync(username).Result.Data;
+                    sr.Data = userDto;
                     sr.Success = true;
                 }
             }
             return sr;
         }
 
-        public async Task<ServiceResponse<AppUser>> GetUserByUsernameAsync(string userName){
-            var foundUser = await _userManager.FindByNameAsync(userName);
-            var sr = new ServiceResponse<AppUser>();
+        public async Task<ServiceResponse<UserDto>> GetUserByUsernameAsync(string username){
+            var foundUser = await _userManager.FindByNameAsync(username);
+            var sr = new ServiceResponse<UserDto>();
             if (foundUser != null)
             {
                 //the user exist in db.
+                var userDto = _mapper.Map<UserDto>(foundUser);
+                var friends = await GetUserFriendsAsync(username);
+                userDto.Friends = friends.Data;
+
                 sr.Code = 200;
                 sr.Success = true;
-                sr.Data = foundUser;
+                sr.Data = userDto;
             }
             else
             {
@@ -144,58 +164,24 @@ namespace LifeLongApi.Services
             return sr;
         }
 
-        public async Task<ServiceResponse<UserDto>> GetUserByUsernameWithRelationshipsAsync(string userName)
-        {
-            var sr = new ServiceResponse<UserDto>();
-            //get user
-            var user = await GetUserByUsernameAsync(userName);
-            if(user.Data == null){
-                //user not found
-                //return error message gotten
-                sr.HelperMethod(404, user.Message, false);
-                return sr;
-            }
-
-            var userDto = _mapper.Map<UserDto>(user.Data);
-            var userFieldOfInterests =  _userFieldOfInterestRepo.GetFieldOfInterestIdsForUser(user.Data.Id);
-            //get the user's field of interest names.
-            userDto.UserFieldOfInterests = _mapper.Map<List<UserFieldOfInterestDto>>(
-                                                                    await _userFieldOfInterestRepo
-                                                                    .GetFieldOfInterestsForUserAsync(user.Data.Id)
-                                                                );
-            userDto.Roles = await _userManager.GetRolesAsync(user.Data) as List<string>;
-            userDto.UserWorkExperiences = _mapper.Map<List<WorkExperienceResponseDto>>(
-                                                                            await _workExperienceRepo
-                                                                            .GetAllForUserAsync(user.Data.Id)
-                                                                        );
-            userDto.Friends =  GetUserFriendsAsync(userName).Result.Data;
-          
-            sr.Data = userDto;
-            sr.Code = 200;
-            sr.Success = true;
-            return sr;
-
-        }
-
-        public async Task<ServiceResponse<List<SearchResponseDto>>> GetUsersByInterestSearchResultAsync(string searchString)
+        public async Task<ServiceResponse<List<SearchResponseDto>>> GetMentorsByFieldOfInterestAsync(string searchString)
         {
             var sr = new ServiceResponse<List<SearchResponseDto>>();
 
             if(String.IsNullOrWhiteSpace(searchString)){
-                sr.HelperMethod(404, "Please enter a search phrase", false);
-                return sr;
+                return sr.HelperMethod(404, "Please enter a search phrase", false);
             }
 
             //make sure field of interest exists in db.
             var topicCreds = await _topicService.GetFieldOfInterestByNameAsync(searchString);
             if (topicCreds.Data == null)
             {
-                sr.HelperMethod(404, topicCreds.Message, false);
-                return sr;
+                return sr.HelperMethod(404, topicCreds.Message, false);
             }
 
-            var users = await _userFieldOfInterestRepo.GetUsersByFieldOfInterestAsync(topicCreds.Data.Id);
-            var searchResult = _mapper.Map<List<SearchResponseDto>>(users);
+            var users = await _userRepo.GetUsersByFieldOfInterestAsync(topicCreds.Data.Id);
+            var mentors = await GetMentorsFromUsersAsync(users);
+            var searchResult = _mapper.Map<List<SearchResponseDto>>(mentors);
 
             sr.Data = searchResult;
             sr.Code = 200;
@@ -203,18 +189,54 @@ namespace LifeLongApi.Services
             return sr;
         }
 
+        /// <summary>
+        /// Gets all users with the role of mentor.
+        /// </summary>
+        /// <param name="users">The list of users to filter from.</param>
+        /// <returns>A task that represent the asynchronous operation. The task result contains list of users that all belongs to the mentor role.</returns>
+        public async Task<List<AppUser>> GetMentorsFromUsersAsync(IEnumerable<AppUser> users)
+        {
+            if(users is null)
+            {
+                throw new ArgumentNullException(nameof(users), $"{nameof(users)} cannot be null.");
+            }
+
+            if (!users.Any())
+            {
+                throw new ArgumentException($"{nameof(users)} cannot be null.", nameof(users));
+            }
+
+            List<AppUser> mentors = new List<AppUser>();
+            foreach (var user in users)
+            {
+                //find mentors among list of returned users.
+                if (await _userManager.IsInRoleAsync(user, "Mentor"))
+                {
+                    var menteesRelationships = await _followRepo.GetAllMentorshipInfoForMentor(user.Id);
+                    //select unique mentees
+                    var uniqueMentees = menteesRelationships.GroupBy(m => m.MenteeId)
+                                                            .Select(i => i.FirstOrDefault())
+                                                            .ToList();
+                    user.Mentees = uniqueMentees;
+                    user.UserFieldOfInterests = await _userFieldOfInterestRepo.GetFieldOfInterestsForUserAsync(user.Id);
+                    mentors.Add(user);
+                }
+            }
+
+            return mentors;
+        }
+
         public async Task<ServiceResponse<List<string>>> GetFieldOfInterestNamesForUserAsync(string userName){
             var sr = new ServiceResponse<List<String>>();
             //get user
-            var user = await GetUserByUsernameAsync(userName);
-            if (user.Data == null)
+            var user = await _userManager.FindByNameAsync(userName);
+            if (user == null)
             {
                 //User does not exist
-                sr.HelperMethod(404, user.Message, false);
-                return sr;
+                return sr.HelperMethod(404, "User not found.", false);
             }
             //save field of interest Ids into a variable
-            var userFieldOfInterestIds = _userFieldOfInterestRepo.GetFieldOfInterestIdsForUser(user.Data.Id);
+            var userFieldOfInterestIds = _userFieldOfInterestRepo.GetFieldOfInterestIdsForUser(user.Id);
             //variable to hold field of interest names
             var userFieldOfInterestNames = new List<string>();
             foreach (var userFieldOfInterestId in userFieldOfInterestIds)
@@ -495,22 +517,22 @@ namespace LifeLongApi.Services
             List<FriendDto> friends;
             var sr = new ServiceResponse<List<FriendDto>>();
             //get user
-            var user = await GetUserByUsernameAsync(username);
-            if (user.Data == null)
+            var user = await _userManager.FindByNameAsync(username); ;
+            if (user == null)
             {
                 //user not found
                 //return error message gotten
-                sr.HelperMethod(404, user.Message, false);
+                sr.HelperMethod(404, "User not found", false);
                 return sr;
             }
 
             //find out if the user is a mentor or a mentee
-            if(await _userManager.IsInRoleAsync(user.Data, "Mentor")){
+            if(await _userManager.IsInRoleAsync(user, "Mentor")){
                 //User is a mentor.
                 //get all mentorship info for user
-                var mentorshipsInfo = await _followRepo.GetAllMentorshipInfoForMentor(user.Data.Id);
+                var mentorshipsInfo = await _followRepo.GetAllMentorshipInfoForMentor(user.Id);
                 //get unique mentorship info
-                //taking the first relationship with a mentee even though there could be more.
+                //take the first relationship with a mentee even though there could be more.
                 var uniqueMentorshipInfo = mentorshipsInfo.GroupBy(f => f.MenteeId)
                                                           .Select(m => m.FirstOrDefault())
                                                           .ToList();
@@ -518,17 +540,6 @@ namespace LifeLongApi.Services
                 friends = _mapper.Map<List<MentorFriendDto>>(uniqueMentorshipInfo)
                                  .Cast<FriendDto>()
                                  .ToList();
-                                 
-                // friends.ForEach(m =>
-                //     {
-                //         //loop through all friends,
-                //         //get the the mentorship info between the mentor and the current friend/mentee in the loop using the mentte username.
-                //         var mentorshipInfo = uniqueMentorshipInfo.Find(p => p.Mentee.UserName == m.User.Username);
-                //         //get all field of interest/topic(s) the have in common.
-                //         m.MutualInterests = GetAllMentorshipMutualInterestAsync(user.Data.Id,
-                //                                                                 mentorshipInfo.MenteeId).Result;
-                //     }
-                // );
 
                 var tt = friends.Select(async m =>
                     {
@@ -536,7 +547,7 @@ namespace LifeLongApi.Services
                         //get the the mentorship info between the mentor and the current friend/mentee in the loop using the mentte username.
                         var mentorshipInfo = uniqueMentorshipInfo.Find(p => p.Mentee.UserName == m.User.Username);
                         //get all field of interest/topic(s) the have in common.
-                        m.MutualInterests = await GetAllMentorshipMutualInterestAsync(user.Data.Id,
+                        m.MutualInterests = await GetAllMentorshipMutualInterestAsync(user.Id,
                                                                   mentorshipInfo.MenteeId);
                         return m.MutualInterests.Count;
                     }
@@ -547,7 +558,7 @@ namespace LifeLongApi.Services
             }else{
                 //User is a mentee.
                 //get all mentorship info for user
-                var mentorshipsInfo = await _followRepo.GetAllMentorshipInfoForMentee(user.Data.Id);
+                var mentorshipsInfo = await _followRepo.GetAllMentorshipInfoForMentee(user.Id);
                 //get unique mentorship info
                 var uniqueMentorshipInfo = mentorshipsInfo.GroupBy(f => f.MentorId)
                                                           .Select(m => m.FirstOrDefault())
@@ -555,13 +566,6 @@ namespace LifeLongApi.Services
                 friends = _mapper.Map<List<MenteeFriendDto>>(uniqueMentorshipInfo)
                                  .Cast<FriendDto>()
                                  .ToList();
-                                 
-                // friends.ForEach(async m => //Find the mentorship info that contains friend username.
-                // {
-                //     //Find the mentorship info that contains friend username.
-                //     var mentorshipInfo = uniqueMentorshipInfo.Find(p => p.Mentor.UserName == m.User.Username);
-                //     m.MutualInterests = await GetAllMentorshipMutualInterestAsync(user.Data.Id, mentorshipInfo.MenteeId);
-                // });
 
                 var tt = friends.Select(async m =>
                     {
@@ -569,7 +573,7 @@ namespace LifeLongApi.Services
                         //Find the mentorship info that contains friend username.
                         var mentorshipInfo = uniqueMentorshipInfo.Find(p => p.Mentor.UserName == m.User.Username);
                         //get all field of interest/topic(s) the have in common.
-                        m.MutualInterests = await GetAllMentorshipMutualInterestAsync(user.Data.Id,
+                        m.MutualInterests = await GetAllMentorshipMutualInterestAsync(user.Id,
                                                                   mentorshipInfo.MenteeId);
                         return m.MutualInterests.Count;
                     }
@@ -590,18 +594,18 @@ namespace LifeLongApi.Services
             List<UnAttendedRequestDto> mentorshipRequests;
             var sr = new ServiceResponse<List<UnAttendedRequestDto>>();
             //get user
-            var user = await GetUserByUsernameAsync(mentorUsername);
-            if (user.Data == null)
+            var user = await _userManager.FindByNameAsync(mentorUsername);
+            if (user == null)
             {
                 //user not found
                 //return error message gotten
-                sr.HelperMethod(404, user.Message, false);
+                sr.HelperMethod(404, "User not found.", false);
                 return sr;
             }
             
             //find out if user is a mentor or mentee so as to know what response object to return.
-            if(await _userManager.IsInRoleAsync(user.Data, "Mentor")){
-                requests = await _followRepo.GetMentorshipRequestsForMentorAsync(user.Data.Id);
+            if(await _userManager.IsInRoleAsync(user, "Mentor")){
+                requests = await _followRepo.GetMentorshipRequestsForMentorAsync(user.Id);
                 // if(requests.Count == 0){
                 //     //to return an emppty lis or not
                 //     //return error message gotten
@@ -614,7 +618,7 @@ namespace LifeLongApi.Services
                                             .Cast<UnAttendedRequestDto>()
                                             .ToList();
             }else{
-                requests = await _followRepo.GetSentMentorshipRequestsForMenteeAsync(user.Data.Id);
+                requests = await _followRepo.GetSentMentorshipRequestsForMenteeAsync(user.Id);
                 mentorshipRequests = _mapper.Map<List<UnAttendedRequestForMenteeDto>>(requests)
                                             .Cast<UnAttendedRequestDto>()
                                             .ToList(); ;
@@ -631,12 +635,11 @@ namespace LifeLongApi.Services
                                                                                               string menteeUsername)
         {
             List<Follow> mentorshipInfo;
-            //List<UnAttendedRequestDto> mentorshipRequests;
             var sr = new ServiceResponse<List<UnAttendedRequestDto>>();
             //get user
-            var mentor = await GetUserByUsernameAsync(mentorUsername);
-            var mentee = await GetUserByUsernameAsync(menteeUsername);
-            if (mentor.Data == null || mentee.Data == null)
+            var mentor = await _userManager.FindByNameAsync(mentorUsername);
+            var mentee = await _userManager.FindByNameAsync(menteeUsername);
+            if (mentor == null || mentee == null)
             {
                 //user not found
                 //return error message gotten
@@ -645,7 +648,7 @@ namespace LifeLongApi.Services
             }
 
             //get friendship info
-            mentorshipInfo = await _followRepo.GetOngoingMentorshipInfoBetweenUsersAsync(mentor.Data.Id, mentee.Data.Id);
+            mentorshipInfo = await _followRepo.GetOngoingMentorshipInfoBetweenUsersAsync(mentor.Id, mentee.Id);
 
             //sr.Data = mentorshipRequests;
             sr.Code = 200;
@@ -658,9 +661,9 @@ namespace LifeLongApi.Services
         {
             var sr = new ServiceResponse<List<UsersRelationshipInfoDto>>();
             //get user
-            var mentor = await GetUserByUsernameAsync(mentorUsername);
-            var mentee = await GetUserByUsernameAsync(menteeUsername);
-            if (mentor.Data == null || mentee.Data == null)
+            var mentor = await _userManager.FindByNameAsync(mentorUsername);
+            var mentee = await _userManager.FindByNameAsync(menteeUsername);
+            if (mentor == null || mentee == null)
             {
                 //user not found
                 //return error message gotten
@@ -669,7 +672,7 @@ namespace LifeLongApi.Services
             }
 
             //get mentorship relations info
-            var mentorshipInfo = await _followRepo.GetUsersRelationshipInfoAsync(mentor.Data.Id, mentee.Data.Id);
+            var mentorshipInfo = await _followRepo.GetUsersRelationshipInfoAsync(mentor.Id, mentee.Id);
 
             sr.Data = _mapper.Map<List<UsersRelationshipInfoDto>>(mentorshipInfo);
             sr.Code = 200;

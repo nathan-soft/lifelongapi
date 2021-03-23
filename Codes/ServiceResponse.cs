@@ -6,10 +6,12 @@ namespace LifeLongApi.Codes {
 
         public string Message { get; set; }
 
-        public void HelperMethod(int code = 200, string message = "", bool success = true){
+        public ServiceResponse<T> HelperMethod(int code = 200, string message = "", bool success = true){
             Code  = code;
             Message = message;
             Success = success;
+
+            return this;
         }
     }
 }

@@ -10,7 +10,6 @@ using LifeLongApi.Data.Repositories;
 using LifeLongApi.Dtos;
 using LifeLongApi.Dtos.Response;
 using LifeLongApi.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using static LifeLongApi.Codes.AppHelper;
 
@@ -30,14 +29,17 @@ namespace LifeLongApi.Services
         private readonly IAppointmentRepository _appointmentRepo;
         private readonly INotificationService _notificationService;
         private readonly IMapper _mapper;
+        private readonly IEmailService _emailService;
         private readonly UserManager<AppUser> _userManager;
         public AppointmentService(IAppointmentRepository appointmentRepo,
                                   IMapper mapper,
+                                  IEmailService emailService,
                                   INotificationService notificationService,
                                   UserManager<AppUser> userManager)
         {
             _appointmentRepo = appointmentRepo;
             _mapper = mapper;
+            _emailService = emailService;
             _notificationService = notificationService;
             _userManager = userManager;
         }
@@ -51,16 +53,14 @@ namespace LifeLongApi.Services
 
             if (foundMentor == null || foundMentee == null)
             {
-                sr.HelperMethod(404, "User not found", false);
-                return sr;
+                return sr.HelperMethod(404, "User not found", false);
             }
 
             var dateAndTime = $"{appointmentCreds.Date} {appointmentCreds.Time}";
             DateTime dateTimeVal;
             if (!IsValidDate(dateAndTime, out dateTimeVal))
             {
-                sr.HelperMethod(400, "Invalid date or time format.", false);
-                return sr;
+                return sr.HelperMethod(400, "Invalid date or time format.", false);
             }
 
 
@@ -88,6 +88,9 @@ namespace LifeLongApi.Services
                           + "</b>";
             await _notificationService.NewNotificationAsync(foundMentor.Id, foundMentee.Id, message, NotificationType.APPOINTMENT);
 
+            //send mail
+            await _emailService.SendAppointmentEmailAsync(foundMentor, foundMentee, appointment);
+
             //get all apointments
             var appointments = await _appointmentRepo.GetAllAsync();
 
@@ -107,11 +110,10 @@ namespace LifeLongApi.Services
 
             if (appointment == null)
             {
-                sr.HelperMethod(404, "Appointment not found", false);
-                return sr;
+                return sr.HelperMethod(404, "Appointment not found", false);
             }
 
-            sr.Code = StatusCodes.Status200OK;
+            sr.Code = 200;
             sr.Data = _mapper.Map<AppointmentResponseDto>(appointment);
             sr.Success = true;
             return sr;
@@ -128,23 +130,20 @@ namespace LifeLongApi.Services
 
             if (!validStatus)
             {
-                sr.HelperMethod(400, "Invalid appointment status.", false);
-                return sr;
+                return sr.HelperMethod(400, "Invalid appointment status.", false);
             }
 
             //status must be either pending or missed because these are the statuses known by the "Outside World".
             if (status != AppointmentStatus.PENDING && status != AppointmentStatus.MISSED)
             {
-                sr.HelperMethod(400, "Invalid appointment status.", false);
-                return sr;
+                return sr.HelperMethod(400, "Invalid appointment status.", false);
             }
 
             //verify user exists
             var foundMentor = await _userManager.FindByNameAsync(username);
             if (foundMentor == null)
             {
-                sr.HelperMethod(404, "User not found", false);
-                return sr;
+                return sr.HelperMethod(404, "User not found", false);
             }
 
             // if (string.IsNullOrEmpty(appointmentStatus)) 
@@ -157,7 +156,7 @@ namespace LifeLongApi.Services
             userAppointments = await _appointmentRepo.GetMentorAppointmentsByTypeAsync(foundMentor.Id, status);
             
 
-            sr.Code = StatusCodes.Status200OK;
+            sr.Code = 200;
             sr.Data = _mapper.Map<List<AppointmentResponseDto>>(userAppointments);
             sr.Success = true;
             return sr;
@@ -176,24 +175,21 @@ namespace LifeLongApi.Services
             var foundMentee = await _userManager.FindByNameAsync(appointmentCreds.MenteeUsername);
             if (foundMentor == null || foundMentee == null)
             {
-                sr.HelperMethod(404, "User not found", false);
-                return sr;
+                return sr.HelperMethod(404, "User not found", false);
             }
 
             var dateAndTime = $"{appointmentCreds.Date} {appointmentCreds.Time}";
             DateTime dateTimeVal;
             if (!IsValidDate(dateAndTime, out dateTimeVal))
             {
-                sr.HelperMethod(400, "Invalid date or time format.", false);
-                return sr;
+                return sr.HelperMethod(400, "Invalid date or time format.", false);
             }
 
             //get appointment
             var appointment = await _appointmentRepo.GetByIdAsync(appointmentId);
             if (appointment.Mentee.UserName != appointmentCreds.MenteeUsername)
             {
-                sr.HelperMethod(400, "The 'Mentee Username' provided does not match with the one in db.", false);
-                return sr;
+                return sr.HelperMethod(400, "The 'Mentee Username' provided does not match.", false);
             }
 
             if (appointment.DateAndTime != dateTimeVal.ToUniversalTime())
@@ -258,8 +254,7 @@ namespace LifeLongApi.Services
             var appointment = await _appointmentRepo.GetByIdAsync(appointmentId);
             if (appointment == null)
             {
-                sr.HelperMethod(404, "No appointment found", false);
-                return sr;
+                return sr.HelperMethod(404, "No appointment found", false);
             }
 
             //delete record.

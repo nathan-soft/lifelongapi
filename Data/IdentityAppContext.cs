@@ -1,4 +1,5 @@
 using LifeLongApi.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -6,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace LifeLongApi.Data {
-    public class IdentityAppContext : IdentityDbContext<AppUser, AppRole, int> {
+    public class IdentityAppContext : IdentityDbContext<AppUser, AppRole, int, IdentityUserClaim<int>, ApplicationUserRole, IdentityUserLogin<int>, IdentityRoleClaim<int>, IdentityUserToken<int>> {
         public IdentityAppContext (DbContextOptions<IdentityAppContext> options) : base (options) {
 
         }
@@ -14,8 +15,58 @@ namespace LifeLongApi.Data {
         protected override void OnModelCreating (ModelBuilder modelBuilder) {
             base.OnModelCreating (modelBuilder);
 
-            modelBuilder.Entity<Follow> ()
-                .HasIndex (f => new { f.MenteeId, f.MentorId, f.TopicId })
+            modelBuilder.Entity<AppUser>(b => {
+                // Each User can have many entries in the UserRole join table
+                b.HasMany(e => e.UserRoles)
+                    .WithOne(e => e.User)
+                    .HasForeignKey(ur => ur.UserId)
+                    .IsRequired();
+            });
+
+            modelBuilder.Entity<AppRole>(b =>
+            {
+                // Each Role can have many entries in the UserRole join table
+                b.HasMany(e => e.UserRoles)
+                    .WithOne(e => e.Role)
+                    .HasForeignKey(ur => ur.RoleId)
+                    .IsRequired();
+
+                b.HasData(
+                    new AppRole
+                    {
+                        Id = 1,
+                        Name = "Admin",
+                        NormalizedName = "ADMIN"
+                    },
+                    new AppRole
+                    {
+                        Id = 2,
+                        Name = "Moderator",
+                        NormalizedName = "MODERATOR"
+                    },
+                    new AppRole
+                    {
+                        Id = 3,
+                        Name = "Mentor",
+                        NormalizedName = "MENTOR"
+                    },
+                    new AppRole
+                    {
+                        Id = 4,
+                        Name = "Mentee",
+                        NormalizedName = "MENTEE"
+                    }
+                );
+            });
+
+            modelBuilder.Entity<ArticleTag>()
+                .HasKey(at => new { at.ArticleId, at.TopicId });
+
+            modelBuilder.Entity<Category>()
+                .HasIndex(c => new { c.Name}).IsUnique();
+
+            modelBuilder.Entity<Follow>()
+                .HasIndex(f => new { f.MenteeId, f.MentorId, f.TopicId })
                 .IsUnique();
 
             // modelBuilder.Entity<Follow> ()
@@ -28,6 +79,9 @@ namespace LifeLongApi.Data {
             //     .WithMany (a => a.Mentors)
             //     .HasForeignKey (f => f.MentorId);
 
+            modelBuilder.Entity<Topic>()
+                .HasIndex(t => new { t.Name }).IsUnique();
+
             modelBuilder.Entity<UserFieldOfInterest>()
                 .HasKey(uf => new { uf.UserId, uf.TopicId });
 
@@ -38,6 +92,8 @@ namespace LifeLongApi.Data {
                 .HasIndex(W => new { W.UserId, W.CompanyName, W.TopicId, W.StartYear }).IsUnique();
         }
 
+        public DbSet<Article> Articles { get; set; }
+        public DbSet<ArticleTag> ArticleTags { get; set; }
         public DbSet<Follow> Follows { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Qualification> Qualifications { get; set; }

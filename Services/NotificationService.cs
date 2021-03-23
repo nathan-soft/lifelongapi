@@ -5,7 +5,6 @@ using LifeLongApi.Codes;
 using LifeLongApi.Data.Repositories;
 using LifeLongApi.Dtos.Response;
 using LifeLongApi.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using static LifeLongApi.Codes.AppHelper;
 
@@ -57,13 +56,12 @@ namespace LifeLongApi.Services
             var foundUser = await _userManager.FindByNameAsync(username);
             if (foundUser == null)
             {
-                sr.HelperMethod(404, "User not found", false);
-                return sr;
+                return sr.HelperMethod(404, "User not found", false);
             }
 
             var userNotifications = await _notificationRepo.GetNotificationsForUserAsync(foundUser.Id);
 
-            sr.Code = StatusCodes.Status200OK;
+            sr.Code = 200;
             sr.Data = _mapper.Map<List<NotificationResponseDto>>(userNotifications);
             sr.Success = true;
             return sr;
@@ -76,8 +74,7 @@ namespace LifeLongApi.Services
             var notification = await _notificationRepo.GetByIdAsync(notificationId);
             if (notification == null)
             {
-                sr.HelperMethod(404, "Notification not found", false);
-                return sr;
+                return sr.HelperMethod(404, "Notification not found", false);
             }
 
             notification.IsSeen = true;
@@ -97,8 +94,7 @@ namespace LifeLongApi.Services
 
             if (notification == null)
             {
-                sr.HelperMethod(404, "Notification not found", false);
-                return sr;
+                return sr.HelperMethod(404, "Notification not found", false);
             }
 
             await _notificationRepo.DeleteAsync(notification);

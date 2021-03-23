@@ -21,6 +21,8 @@ namespace LifeLongApi.Models {
 
         // public int MenteesCount { get; set; }
 
+        public virtual List<Article> Articles { get; set; }
+
         [InverseProperty("Mentor")]
         public virtual List<Appointment> MentorAppointments { get; set; }
         [InverseProperty("Mentee")]
@@ -35,7 +37,14 @@ namespace LifeLongApi.Models {
         public virtual List<Follow> Mentors { get; set; }
         [InverseProperty("Mentee")]
         public virtual List<Follow> Mentees { get; set; }
-        public virtual List<AppRole> Roles { get; set; }
+        //public virtual List<AppRole> Roles { get; set; }
+        public virtual ICollection<ApplicationUserRole> UserRoles { get; set; }
         public virtual List<UserFieldOfInterest> UserFieldOfInterests { get; set; }
+    }
+
+    public class ApplicationUserRole : IdentityUserRole<int>
+    {
+        public virtual AppUser User { get; set; }
+        public virtual AppRole Role { get; set; }
     }
 }

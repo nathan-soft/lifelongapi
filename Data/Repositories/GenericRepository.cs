@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace LifeLongApi.Data.Repositories
@@ -22,6 +23,11 @@ namespace LifeLongApi.Data.Repositories
         public async Task<IEnumerable<T>> GetAllAsync()
         {
             return await entities.ToListAsync();
+        }
+
+        public async Task<IEnumerable<T>> Find(Expression<Func<T, bool>> predicate)
+        {
+            return await entities.Where(predicate).ToListAsync();
         }
 
         public async Task<T> GetByIdAsync(int id)

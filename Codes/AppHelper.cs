@@ -13,6 +13,14 @@ namespace LifeLongApi.Codes
             POSTPONED //the same as pending, the difference is that it's been edited.
         }
 
+        public enum Roles
+        {
+            ADMIN,
+            MODERATOR,
+            MENTOR, 
+            MENTEE
+        }
+        
         public enum FollowStatus
         {//this enum holds the different available status for the follow table.
 

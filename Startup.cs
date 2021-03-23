@@ -1,4 +1,5 @@
 using AutoMapper;
+using Azure.Storage.Blobs;
 using LifeLongApi.Codes;
 using LifeLongApi.Data;
 using LifeLongApi.Data.Repositories;
@@ -32,10 +33,14 @@ namespace LifeLongApi {
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices (IServiceCollection services) {
             services.AddControllers ();
+            services.AddHttpContextAccessor();
             services.AddAutoMapper (typeof (Startup));
             services.AddScoped<IAuthService, AuthService> ();
             services.AddScoped<IAppointmentService, AppointmentService>();
+            services.AddScoped<IArticleService, ArticleService>();
+            services.AddScoped<IBlobService, BlobService>();
             services.AddScoped<ICategoryService, CategoryService>();
+            services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IFollowService, FollowService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IRoleService, RoleService>();
@@ -46,6 +51,8 @@ namespace LifeLongApi {
             services.AddScoped(typeof(ApiErrorResponseDto));
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+            services.AddScoped<IArticleRepository, ArticleRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddScoped<IFollowRepository, FollowRepository>();
             services.AddScoped<IQualificationRepository, QualificationRepository>();
@@ -108,6 +115,7 @@ namespace LifeLongApi {
                         .GetBytes (Configuration.GetSection ("Jwt").GetSection ("Key").Value))
                     };
                 });
+            services.AddSingleton(x => new BlobServiceClient(Configuration.GetSection("AzureBlobStorageConnectionString").Value));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

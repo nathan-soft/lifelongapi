@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using AutoMapper;
 using LifeLongApi.Codes;
 using LifeLongApi.Dtos;
@@ -12,10 +13,13 @@ namespace LifeLongApi.Codes
         public AutoMapperProfile()
         {
             CreateMap<AppUser, RegisterDto>().ReverseMap();
-            CreateMap<AppUser, UserDto>().ReverseMap();
-            // .ForSourceMember(src => src.Followers, opt => opt.DoNotValidate())
-            // .ForSourceMember(src => src.Following, opt => opt.DoNotValidate())
-            // .ForMember(dest => dest.UserFieldOfInterests, opt => opt.Ignore());
+            CreateMap<UserDto, AppUser>();
+            CreateMap<AppUser, UserDto>()
+             .ForMember(dest => dest.Roles, opt => opt.MapFrom(src => src.UserRoles.Select(r => r.Role.Name).ToList()));
+             //.ForPath(dest => dest.UserWorkExperiences, opt => opt.MapFrom(src => src.WorkExperiences.Select(r => new WorkExperienceResponseDto {
+                 
+             //}).ToList()))
+             //.ForMember(dest => dest.UserFieldOfInterests, opt => opt.MapFrom(src => src.UserFieldOfInterests));
             CreateMap<AppUser, ApiOkResponseDto>().ReverseMap();
             CreateMap<AppUser, SearchResponseDto>()
                         .ForPath(dest => dest.User.Username, opt => opt.MapFrom(src => src.UserName))
@@ -33,6 +37,12 @@ namespace LifeLongApi.Codes
                                                                 TimeZoneInfo.FindSystemTimeZoneById(src.Mentor.TimeZone)));
                 });
             CreateMap<AppointmentDto, Appointment>();
+            CreateMap<ArticleRequestDto, Article>();
+            CreateMap<Article, ArticleResponseDto>()
+                .ForPath(dest => dest.Author.FullName,
+                           opt => opt.MapFrom(src => $"{src.Author.FirstName} {src.Author.LastName}"))
+                .ForPath(dest => dest.Author.Username, opt => opt.MapFrom(src => src.Author.UserName))
+                .ForPath(dest => dest.ArticleTags, opt => opt.MapFrom(src => src.ArticleTags.Select(at => at.Topic.Name)));
             CreateMap<QualificationDto, Qualification>();
             CreateMap<Qualification, QualificationResponseDto>().ReverseMap();
             CreateMap<Notification, NotificationResponseDto>()
@@ -73,14 +83,11 @@ namespace LifeLongApi.Codes
             CreateMap<Follow, UsersRelationshipInfoDto>()
                 .ForMember(dest => dest.TopicName, opt => opt.MapFrom(src => src.Topic.Name));
             CreateMap<WorkExperience, WorkExperienceResponseDto>()
-                .ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.User.UserName))
-                .ForMember(dest => dest.FieldOfInterestId, opt => opt.MapFrom(src => src.TopicId))
                 .ForMember(dest => dest.FieldOfInterest, opt => opt.MapFrom(src => src.Topic.Name));
             CreateMap<WorkExperienceDto, WorkExperience>();
             CreateMap(typeof(ServiceResponse<>), typeof(ApiOkResponseDto));
             CreateMap(typeof(ServiceResponse<>), typeof(UserDto)).ReverseMap();
             CreateMap(typeof(ServiceResponse<>), typeof(ApiErrorResponseDto)).ForSourceMember("Code", c => c.ToString());
-            //CreateMap<AddCharacterDto, Character> ();
 
             var configuration = new MapperConfiguration(cfg =>
                cfg.CreateMap(typeof(ServiceResponse<>), typeof(ApiErrorResponseDto))

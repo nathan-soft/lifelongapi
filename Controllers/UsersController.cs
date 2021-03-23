@@ -45,7 +45,7 @@ namespace LifeLongApi.Controllers
         {
             try
             {
-                var userDto = await _userService.GetUserByUsernameWithRelationshipsAsync(username);
+                var userDto = await _userService.GetUserByUsernameAsync(username);
                 //set status code.
                 HttpContext.Response.StatusCode = userDto.Code;
                 if (userDto.Success)
@@ -368,12 +368,12 @@ namespace LifeLongApi.Controllers
 
         [AllowAnonymous]
         [HttpGet("interests/{searchString}")]
-        public async Task<ApiResponseDto> GetUsersByInterestsAsync(string searchString)
+        public async Task<ApiResponseDto> GetMentorsByInterestsAsync(string searchString)
         {
             searchString = HttpUtility.UrlDecode(searchString);
             try
             {
-                var response = await _userService.GetUsersByInterestSearchResultAsync(searchString);
+                var response = await _userService.GetMentorsByFieldOfInterestAsync(searchString);
                 //set status code.
                 HttpContext.Response.StatusCode = response.Code;
 

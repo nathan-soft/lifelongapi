@@ -12,8 +12,7 @@ namespace LifeLongApi.Services {
 
         // public ServiceResponse<List<RoleDto>> GetUsers();
 
-        public Task<ServiceResponse<AppUser>> GetUserByUsernameAsync (string username);
-        public Task<ServiceResponse<UserDto>> GetUserByUsernameWithRelationshipsAsync (string userName);
+        public Task<ServiceResponse<UserDto>> GetUserByUsernameAsync (string username);
         public Task<ServiceResponse<UserDto>> UpdateUserAsync (string username, UserDto userCreds);
         public Task<ServiceResponse<UserFieldOfInterestDto>> AddFieldOfInterestForUser (UserFieldOfInterestDto creds);
         public Task<bool> DoesUserHaveInterestInFieldAsync (UserFieldOfInterestDto creds);
@@ -31,7 +30,7 @@ namespace LifeLongApi.Services {
         // public Task<ServiceResponse<string>> DeleteUser(string username);
 
         public Task<ServiceResponse<List<WorkExperienceResponseDto>>> GetUserWorkExperiencesAsync (string username);
-        public Task<ServiceResponse<List<SearchResponseDto>>> GetUsersByInterestSearchResultAsync (string searchString);
+        public Task<ServiceResponse<List<SearchResponseDto>>> GetMentorsByFieldOfInterestAsync (string searchString);
         Task<ServiceResponse<List<FriendDto>>> GetUserFriendsAsync (string username);
         Task<ServiceResponse<List<UnAttendedRequestDto>>> GetMentorshipRequestsAsync (string mentorUsername);
         Task<ServiceResponse<List<UnAttendedRequestDto>>> GetFriendshipInfoAsync(string mentorUsername, string menteeUsername);

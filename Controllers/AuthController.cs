@@ -18,18 +18,20 @@ namespace LifeLongApi.Controllers {
         public class AuthController : ControllerBase {
             private readonly IUserService _userService;
             private readonly IAuthService _authService;
-             private static ApiOkResponseDto _apiOkResponse;
+            private static ApiOkResponseDto _apiOkResponse;
             private static ApiErrorResponseDto _apiErrorResponse;
             private readonly IMapper _mapper;
+            private readonly IBlobService _blobService;
 
             public AuthController (IAuthService authService, IMapper mapper, IUserService userService, 
-                        ApiOkResponseDto apiOkResponse, ApiErrorResponseDto apiErrorResponse) 
+                        ApiOkResponseDto apiOkResponse, ApiErrorResponseDto apiErrorResponse, IBlobService blobService) 
             {
                 _authService = authService;
                 _userService = userService;
                 _mapper = mapper;
                 _apiErrorResponse = apiErrorResponse;
                 _apiOkResponse = apiOkResponse;
+                _blobService = blobService;
             }
 
             [HttpPost("login")]
@@ -82,5 +84,35 @@ namespace LifeLongApi.Controllers {
                     return _apiErrorResponse;
                 }
             }
-        }
+
+        //[HttpGet("Send_Mail")]
+        //public  ActionResult TestMail()
+        //{
+        //    try
+        //    {
+        //        _emailService.SendTestMailAsync();
+        //        return Ok("Mail sent!");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(new { error = ex.Message });
+        //    }
+        //}
+
+        //[HttpPost("test_upload")]
+        //public async Task<ActionResult> TestUpload([FromForm] ArticleDto article)
+        //{
+        //    //try
+        //    //{
+        //    //    var result = await _blobService.UploadFileBlobAsync("blog-images",
+        //    //                                                        article.UploadedImage.OpenReadStream(),
+        //    //                                                        article.UploadedImage.FileName);
+        //    //    return Ok(result);
+        //    //}
+        //    //catch (Exception ex)
+        //    //{
+        //    //    return BadRequest(new { error = ex.Message });
+        //    //}
+        //}
+    }
 }

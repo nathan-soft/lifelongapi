@@ -4,7 +4,6 @@ using LifeLongApi.Data.Repositories;
 using LifeLongApi.Dtos;
 using LifeLongApi.Dtos.Response;
 using LifeLongApi.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +18,7 @@ namespace LifeLongApi.Services
     {
         private readonly IFollowRepository _followRepo;
         private readonly IMapper _mapper;
+        private readonly IEmailService _emailService;
         private readonly INotificationService _notificationService;
         private readonly ITopicService _topicService;
         private readonly UserManager<AppUser> _userManager;
@@ -26,6 +26,7 @@ namespace LifeLongApi.Services
         private readonly IUserFieldOfInterestRepository _userFieldOfInterestRepo;
         public FollowService(IFollowRepository followRepo,
                              IMapper mapper,
+                             IEmailService emailService,
                              INotificationService notificationService,
                              ITopicService topicService,
                              UserManager<AppUser> userManager,
@@ -34,6 +35,7 @@ namespace LifeLongApi.Services
         {
             _followRepo = followRepo;
             _mapper = mapper;
+            _emailService = emailService;
             _notificationService = notificationService;
             _topicService = topicService;
             _userManager = userManager;
@@ -50,24 +52,21 @@ namespace LifeLongApi.Services
             var menteeCreds = await _userManager.FindByNameAsync(requestCreds.MenteeUsername);
             if (mentorCreds == null || menteeCreds == null)
             {
-                sr.HelperMethod(404, "One of the users does not exist.", false);
-                return sr;
+                return sr.HelperMethod(404, "One of the users does not exist.", false);
             }
 
             //validate topic name
             var topicCreds = await _topicService.GetFieldOfInterestByNameAsync(requestCreds.TopicName);
             if (topicCreds.Data == null)
             {
-                sr.HelperMethod(404, $"Could not find field Of interest with name {requestCreds.TopicName}", false);
-                return sr;
+                return sr.HelperMethod(404, $"Could not find field Of interest with name {requestCreds.TopicName}", false);
             }
 
             //validate that mentor have listed the topic, with the id of  "topicId" ,as part of their field of interest.
             var mentorHasInterest = await _userFieldOfInterestRepo.IsFieldPartOfUserInterestsAsync(mentorCreds.Id, topicCreds.Data.Id);
             if (!mentorHasInterest)
             {
-                sr.HelperMethod(404, "The selected field of interest is not part of the mentor's interest.", false);
-                return sr;
+                return sr.HelperMethod(404, "The selected field of interest is not part of the mentor's interest.", false);
             }
 
             //get existing relationship
@@ -75,8 +74,7 @@ namespace LifeLongApi.Services
             //check if relationship exist already
             if (relationshipExist != null)
             {
-                sr.HelperMethod(StatusCodes.Status403Forbidden, "Similar mentorship request already exist.", false);
-                return sr;
+                return sr.HelperMethod(403, "Similar mentorship request already exist.", false);
             }
 
             var mentorshipRequest = new Follow
@@ -95,7 +93,8 @@ namespace LifeLongApi.Services
                                                       mentorCreds.Id,
                                                       message,
                                                       NotificationType.MENTORSHIPREQUEST);
-
+            //snd mail to mentor
+            _emailService.SendMentorshipRequestMailAsync(mentorCreds, menteeCreds, topicCreds.Data.Name);
 
             //get recently added mentorship request.
             var recentRequest = await _followRepo.GetMentorshipInfo(menteeCreds.Id, mentorCreds.Id, topicCreds.Data.Id);
@@ -111,6 +110,13 @@ namespace LifeLongApi.Services
             var sr = new ServiceResponse<FriendDto>();
             //get pending mentorship
             var foundPendingMentorship = await _followRepo.GetByIdAsync(mentorshipId);
+
+            //check if relationship exist already
+            if (foundPendingMentorship == null)
+            {
+                return sr.HelperMethod(404, "Pending mentorship request not found.", false);
+            }
+
             //Validation
             var result = ValidateMentorshipCred<FriendDto>(foundPendingMentorship, mentorshipRequest);
             if (!result.Success)
@@ -119,7 +125,7 @@ namespace LifeLongApi.Services
             }
 
             //update mentorship request.
-            await PerformUpdateAsync(foundPendingMentorship, mentorshipRequest.Status);
+            await UpdateMentorshipStatusAsync(foundPendingMentorship, mentorshipRequest.Status);
 
             //send notification to mentee.
             string message;
@@ -129,7 +135,10 @@ namespace LifeLongApi.Services
                                                             foundPendingMentorship.MenteeId,
                                                             message,
                                                             NotificationType.MENTORSHIPREQUEST);
-
+            //send mail
+            _emailService.SendMentorshipApprovalEmailAsync(foundPendingMentorship.Mentor,
+                                                      foundPendingMentorship.Mentee,
+                                                      foundPendingMentorship.Topic.Name);
             //return result
             sr.Code = 200;
             sr.Data = _mapper.Map<MentorFriendDto>(foundPendingMentorship);
@@ -145,6 +154,12 @@ namespace LifeLongApi.Services
             var sr = new ServiceResponse<UnAttendedRequestDto>();
             //get pending mentorship
             var foundPendingMentorship = await _followRepo.GetByIdAsync(mentorshipId);
+
+            //check if relationship exist already
+            if (foundPendingMentorship == null)
+            {
+                return sr.HelperMethod(404, "Pending mentorship request not found.", false);
+            }
             //Validation
             var result = ValidateMentorshipCred<UnAttendedRequestDto>(foundPendingMentorship, mentorshipRequest);
             if (!result.Success)
@@ -153,7 +168,7 @@ namespace LifeLongApi.Services
             }
 
             //update mentorship request.
-            await PerformUpdateAsync(foundPendingMentorship, mentorshipRequest.Status);
+            await UpdateMentorshipStatusAsync(foundPendingMentorship, mentorshipRequest.Status);
 
             //send notification to mentee.
             string message;
@@ -180,15 +195,14 @@ namespace LifeLongApi.Services
             //Verify the resource exists
             if (mentorshipInfo == null)
             {
-                sr.HelperMethod(404, "Mentorship request not found.", false);
+                return sr.HelperMethod(404, "Mentorship request not found.", false);
             }
 
             //delete mentorship info.
             await _followRepo.DeleteAsync(mentorshipInfo);
 
             //return result
-            sr.HelperMethod(200, "Delete Successful.", true);
-            return sr;
+            return sr.HelperMethod(200, "Delete Successful.", true);
 
         }
 
@@ -201,30 +215,30 @@ namespace LifeLongApi.Services
         private ServiceResponse<T> ValidateMentorshipCred<T>(Follow pendingMentorship,
                                                                            MentorshipRequestUpdateDto creds)
         {
+            ///TODO
+            ///MentorshipRequestUpdateDto don't need the username property since it's only mentors that can perform this action and the "current user" can be gotten from the HttpContext.User proprty.
+            ///once the current user has been gotten, the first "if statement" should be updated appropriately.
+           
             var sr = new ServiceResponse<T>();
-            //check if relationship exist already
-            if (pendingMentorship == null)
+
+            //verify mentor username
+            //this is to make sure that the mentor username provided, matches the same mentor username the mentorship 
+            //request was initially sent to.
+            if (pendingMentorship.Mentor.UserName != creds.MentorUsername)
             {
-                sr.HelperMethod(404, "Pending mentorship request not found.", false);
-            }
-            else if (pendingMentorship.Mentor.UserName != creds.MentorUsername)
-            {
-                //verify mentor username
-                //this is to make sure the mentor's username provided is the same mentor the mentorship request was sent to.
-                sr.HelperMethod(403, $"You do not have the permission to perform the action.", false);
+                return sr.HelperMethod(403, $"You do not have the permission to perform the action.", false);
             }else if(pendingMentorship.Status == FollowStatus.CONFIRMED.ToString() || creds.Status == FollowStatus.PENDING){
                 //should not be able to make changes to a mentorship request that's been confirmed already.
                 //or reverting back the status of a request to "Pending".
-                sr.HelperMethod(403, "The action is not allowed.", false);
+                return sr.HelperMethod(403, "The action is not allowed.", false);
             }else if (pendingMentorship.Status == creds.Status.ToString())
             {
-                sr.HelperMethod(400, "No action was taken because the mentorship request is already up to date.", false);
+                return sr.HelperMethod(400, "No action was taken because the mentorship request is already up to date.", false);
             }
             else
             {
-                sr.HelperMethod(200, null, true);
+                return sr.HelperMethod(200, null, true);
             }
-            return sr;
         }
 
         /// <summary>
@@ -233,7 +247,7 @@ namespace LifeLongApi.Services
         /// <param name="mentorshipRequest">The request to update.</param>
         /// <param name="status">The status to change the request to.</param>
         /// <returns></returns>
-        private async Task PerformUpdateAsync(Follow mentorshipRequest, FollowStatus status)
+        private async Task UpdateMentorshipStatusAsync(Follow mentorshipRequest, FollowStatus status)
         {
             //update status property
             mentorshipRequest.Status = status.ToString();

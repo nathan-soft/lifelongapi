@@ -25,7 +25,7 @@ namespace LifeLongApi.Services
         public async Task<ServiceResponse<List<TopicDto>>> GetAllFieldOfInterestAsync()
         {
             var topics = await _fieldOfInterestRepo.GetAllAsync();
-            topics = topics.ToList();
+            //topics = topics.ToList();
 
             var sr = new ServiceResponse<List<TopicDto>>();
             sr.Code = StatusCodes.Status200OK;
@@ -74,11 +74,10 @@ namespace LifeLongApi.Services
         {
             var sr = new ServiceResponse<TopicDto>();
             //get field Of Interest.
-            var foundEntity = await GetFieldOfInterestByNameAsync(fieldOfInterest.Name);
-            if(foundEntity.Data != null){
+            var foundEntity = await _fieldOfInterestRepo.GetByNameAsync(fieldOfInterest.Name);
+            if(foundEntity != null){
                 //duplicate name
-                sr.HelperMethod(409, "A record with same name already exists", false);
-                return sr;
+                return sr.HelperMethod(409, "A record with same name already exists", false);
             }
 
             //insert new Field of interest.
@@ -118,8 +117,7 @@ namespace LifeLongApi.Services
                 sr.Success = true;
                 return sr;
             }else{
-                sr.HelperMethod(404, "No field of interest found", false);
-                return sr;
+                return sr.HelperMethod(404, "No field of interest found", false);
             }
                 
         }

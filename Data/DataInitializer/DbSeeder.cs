@@ -31,7 +31,7 @@ namespace LifeLongApi.Data.DataInitializer
         }
         public async  Task SeedDataAsync()
         {
-            await SeedRolesAsync();
+            //await SeedRolesAsync();
             await SeedUsersAsync();
             await SeedCategoriesAsync();
             await SeedFieldOfInterestsAsync();
@@ -44,13 +44,23 @@ namespace LifeLongApi.Data.DataInitializer
         {
             var users = new List<RegisterDto>() {
                 new RegisterDto {
-                Email = "admin@lifelong.com",
-                FirstName = "Admin",
-                LastName = "Account",
-                Password = "Lifelong1$",
+                Email = "informjiday@gmail.com",
+                FirstName = "Jide",
+                LastName = "Ayegbusi",
+                Password = "Password1$",
                 PhoneNumber = "08036566809",
                 Gender = "Male",
                 Role = "Admin",
+                TimeZone = TimeZoneInfo.Local.Id
+                },
+                new RegisterDto {
+                Email = "nathan@idevworks.com",
+                FirstName = "Nathan",
+                LastName = "Omomowo",
+                Password = "Lifelong1$",
+                PhoneNumber = "07048092157",
+                Gender = "Male",
+                Role = "Moderator",
                 TimeZone = TimeZoneInfo.Local.Id
                 },
                 new RegisterDto {
@@ -59,7 +69,7 @@ namespace LifeLongApi.Data.DataInitializer
                 LastName = "Mentor",
                 Password = "Mentor1$",
                 PhoneNumber = "08055165372",
-                Gender = "Female",
+                Gender = "Male",
                 Role = "Mentor",
                 TimeZone = TimeZoneInfo.Local.Id
                 },
@@ -90,22 +100,22 @@ namespace LifeLongApi.Data.DataInitializer
 
         }
 
-        private static async Task SeedRolesAsync()
-        {
-            var roleNames = new List<string>{
-                "Admin", "Mentor", "Mentee"
-            };
+        //private static async Task SeedRolesAsync()
+        //{
+        //    var roleNames = new List<string>{
+        //        "Admin", "Mentor", "Mentee"
+        //    };
 
-            foreach (var roleName in roleNames)
-            {
-                var result = await _roleService.NewRoleAsync(roleName);
-                if (!result.Success)
-                {
-                    //error
-                    //log error here..
-                }
-            }
-        }
+        //    foreach (var roleName in roleNames)
+        //    {
+        //        var result = await _roleService.NewRoleAsync(roleName);
+        //        if (!result.Success)
+        //        {
+        //            //error
+        //            //log error here..
+        //        }
+        //    }
+        //}
 
         private static async Task SeedCategoriesAsync()
         {
@@ -461,7 +471,7 @@ namespace LifeLongApi.Data.DataInitializer
             var request = new FollowDto{
                 MenteeUsername = "mentee@lifelong.com",
                 MentorUsername = "mentor@lifelong.com",
-                TopicName = user.Data.UserFieldOfInterests[0].Topic.Name
+                TopicName = user.Data.UserFieldOfInterests[0].TopicName
             };
 
             var result = await _followService.CreateMentorshipRequestAsync(request);
