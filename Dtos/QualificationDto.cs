@@ -12,7 +12,5 @@ namespace LifeLongApi.Dtos
         public string Major { get; set; }
         public int StartYear { get; set; }
         public int EndYear { get; set; }
-        [Required]
-        public string Username { get; set; }
     }
 }

@@ -198,7 +198,7 @@ namespace LifeLongApi.Controllers
         }
 
         // PUT api/<BlogsController>/5
-        [HttpPut("{id}")]
+        [HttpPut("{postId}")]
         public async Task<ApiResponseDto> UpdateBlogPostAsync(int postId, [FromForm] ArticleRequestDto UpdatedBlogPost)
         {
             try
@@ -230,7 +230,7 @@ namespace LifeLongApi.Controllers
         }
 
         // DELETE api/<BlogsController>/5
-        [HttpDelete("{id}")]
+        [HttpDelete("{postId}")]
         public async Task<ApiResponseDto> DeleteAsync(int postId)
         {
             var response = await _articleService.DeleteArticleAsync(postId);
@@ -240,7 +240,7 @@ namespace LifeLongApi.Controllers
             if (response.Success)
             {
                 //return data.
-                _apiOkResponse.Data = null;
+                _apiOkResponse.Data = response.Message;
                 return _apiOkResponse;
             }
             else

@@ -19,6 +19,7 @@ namespace LifeLongApi.Services
         Task SendAppointmentReminderEmailAsync(AppUser mentor, AppUser mentee, string message);
         Task SendMentorshipApprovalEmailAsync(AppUser mentor, AppUser mentee, string topicName);
         Task SendMentorshipRequestMailAsync(AppUser mentor, AppUser mentee, string topicName);
+        Task SendMailToUserAsync(AppUser user, string mailSubject, string message);
         Task SendTestMailAsync();
         Task SendUpdatedAppointmentEmailAsync(AppUser mentor, AppUser mentee, Appointment appointmentDetail, bool isRescheduled);
     }
@@ -77,6 +78,25 @@ namespace LifeLongApi.Services
             await SendMailAsync(email);
         }
 
+        public async Task SendMailToUserAsync(AppUser user, string mailSubject, string message)
+        {
+            // create message
+            var email = new MimeMessage();
+            email.From.Add(new MailboxAddress("Nkuzi", SMTPUser));
+            email.To.Add(new MailboxAddress($"{user.FirstName} {user.LastName}", user.Email));
+
+            //CONSTRUCT THE MESSAGE BODY.
+            string messageBody = "";
+            messageBody += GetEmailHeader(mailSubject, email);
+            messageBody += message;
+            messageBody += GetEmailFooter(user.Email);
+
+            email.Body = new TextPart(TextFormat.Html) { Text = messageBody };
+
+            // send email
+            await SendMailAsync(email).ConfigureAwait(false);
+        }
+
         private string GetEmailHeader(string caption, MimeMessage mail)
         {
             TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
@@ -86,7 +106,7 @@ namespace LifeLongApi.Services
 
             string T = "";
             T += "--------------------------------------------------------------------------------" + Environment.NewLine;
-            T += "Lifelong.com\n";
+            T += "Nkuzi.com\n";
             T += caption + "\n";
             T += "Date: " + string.Format("{0:dd/MM/yyyy hh:mm:ss tt} UTC", DateTime.UtcNow) + "\n";
             T += "--------------------------------------------------------------------------------\n";
@@ -214,6 +234,12 @@ namespace LifeLongApi.Services
             await SendMailAsync(email).ConfigureAwait(false);
         }
 
+
+        /// <summary>
+        /// gets info about "Nkuzi" that can be appended to the footer of an email so recipients know where the email's from and hopefully build trust.
+        /// </summary>
+        /// <param name="emailTo"> the intended recipient of the mail.</param>
+        /// <returns> info about "Nkuzi" that can be appended to the footer of an email so recipients know where the email's from.</returns>
         private string GetEmailFooter(string emailTo)
         {
             string messageBody = "\n\nIf you have any questions or need technical assitance, ";

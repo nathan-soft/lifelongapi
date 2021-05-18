@@ -18,6 +18,9 @@ namespace LifeLongApi.Models {
         public string Country { get; set; }
         [Required]
         public string TimeZone { get; set; }
+        public bool IsActive { get; set; } = true;
+        public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedOn { get; set; } = DateTime.UtcNow;
 
         // public int MenteesCount { get; set; }
 

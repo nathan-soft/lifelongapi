@@ -13,6 +13,8 @@ namespace LifeLongApi.Models
         [MaxLength(70)]
         [Required]
         public string Title { get; set; }
+        [MaxLength(70), MinLength(25)]
+        public string Excerpt { get; set; }
         [Required]
         public string ImageUrl { get; set; }
         [Required]

@@ -12,14 +12,15 @@ namespace LifeLongApi.Codes
     {
         public AutoMapperProfile()
         {
-            CreateMap<AppUser, RegisterDto>().ReverseMap();
+            CreateMap<AppUser, RegisterUserDto>().ReverseMap();
+            CreateMap<CreateUserDto, AppUser>()
+                .ForMember(dest => dest.UserRoles, opt => opt.Ignore());
             CreateMap<UserDto, AppUser>();
+            CreateMap<AppUser, AppUserResponseDto>()
+             .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"))
+             .ForMember(dest => dest.Roles, opt => opt.MapFrom(src => src.UserRoles.Select(r => r.Role.Name).ToList()));
             CreateMap<AppUser, UserDto>()
              .ForMember(dest => dest.Roles, opt => opt.MapFrom(src => src.UserRoles.Select(r => r.Role.Name).ToList()));
-             //.ForPath(dest => dest.UserWorkExperiences, opt => opt.MapFrom(src => src.WorkExperiences.Select(r => new WorkExperienceResponseDto {
-                 
-             //}).ToList()))
-             //.ForMember(dest => dest.UserFieldOfInterests, opt => opt.MapFrom(src => src.UserFieldOfInterests));
             CreateMap<AppUser, ApiOkResponseDto>().ReverseMap();
             CreateMap<AppUser, SearchResponseDto>()
                         .ForPath(dest => dest.User.Username, opt => opt.MapFrom(src => src.UserName))

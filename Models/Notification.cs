@@ -6,9 +6,7 @@ namespace LifeLongApi.Models
     public class Notification : BaseEntity
     {
         public int Id { get; set; }
-        [ForeignKey("CreatedBy")]
         public int CreatedById { get; set; }
-        [ForeignKey("CreatedFor")]
         public int CreatedForId { get; set; }
         [Required]
         public string Message { get; set; }
@@ -16,7 +14,9 @@ namespace LifeLongApi.Models
         [Required]
         public string Type { get; set; }
 
+        [ForeignKey("CreatedById")]
         public virtual AppUser CreatedBy { get; set; }
+        [ForeignKey("CreatedForId")]
         public virtual AppUser CreatedFor { get; set; }
     }
 }

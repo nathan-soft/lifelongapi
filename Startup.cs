@@ -103,6 +103,14 @@ namespace LifeLongApi {
                             context.Response.StatusCode = code;
                             context.HttpContext.Response.Headers.Append ("www-authenticate", "Bearer");
                             return context.Response.WriteAsync (JsonConvert.SerializeObject (response));
+                        },
+                        OnForbidden = context =>
+                        {
+                            var code = StatusCodes.Status403Forbidden;
+                            var response = new { Code = code.ToString(), Message = "You do not have the permission to access the resource." };
+                            context.Response.StatusCode = code;
+                            context.HttpContext.Response.Headers.Append("www-authenticate", "Bearer");
+                            return context.Response.WriteAsync(JsonConvert.SerializeObject(response));
                         }
                     };
                     options.TokenValidationParameters = new TokenValidationParameters {

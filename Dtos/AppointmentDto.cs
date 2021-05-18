@@ -6,8 +6,6 @@ namespace LifeLongApi.Dtos
     public class AppointmentDto
     {
         [Required]
-        public string MentorUsername { get; set; }
-        [Required]
         public string MenteeUsername { get; set; }
         [Required]
         public string Title { get; set; }

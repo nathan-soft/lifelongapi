@@ -10,6 +10,7 @@ using LifeLongApi.Data.Repositories;
 using LifeLongApi.Dtos;
 using LifeLongApi.Dtos.Response;
 using LifeLongApi.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using static LifeLongApi.Codes.AppHelper;
 
@@ -31,24 +32,27 @@ namespace LifeLongApi.Services
         private readonly IMapper _mapper;
         private readonly IEmailService _emailService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         public AppointmentService(IAppointmentRepository appointmentRepo,
                                   IMapper mapper,
                                   IEmailService emailService,
                                   INotificationService notificationService,
-                                  UserManager<AppUser> userManager)
+                                  UserManager<AppUser> userManager,
+                                  IHttpContextAccessor httpContextAccessor)
         {
             _appointmentRepo = appointmentRepo;
             _mapper = mapper;
             _emailService = emailService;
             _notificationService = notificationService;
             _userManager = userManager;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<ServiceResponse<AppointmentResponseDto>> AddAppointmentAsync(AppointmentDto appointmentCreds)
         {
             var sr = new ServiceResponse<AppointmentResponseDto>();
             //verify mentor and mentee exists
-            var foundMentor = await _userManager.FindByNameAsync(appointmentCreds.MentorUsername);
+            var foundMentor = await _userManager.FindByNameAsync(_httpContextAccessor.GetUsernameOfCurrentUser());
             var foundMentee = await _userManager.FindByNameAsync(appointmentCreds.MenteeUsername);
 
             if (foundMentor == null || foundMentee == null)
@@ -75,10 +79,11 @@ namespace LifeLongApi.Services
             await _appointmentRepo.InsertAsync(appointment);
 
             //send notification to mentee
-            var message = "You have a new appointment with {"
+            var message = "You have a new appointment with <b>"
                           + foundMentor.FirstName
+                          + " "
                           + foundMentor.LastName
-                          + "} on <b>"
+                          + "</b> on <b>"
                           + TimeZoneInfo.ConvertTimeFromUtc(appointment.DateAndTime,
                               TimeZoneInfo.FindSystemTimeZoneById(foundMentee.TimeZone)).ToOrdinalWords()
                           + ".</b>"
@@ -171,7 +176,7 @@ namespace LifeLongApi.Services
             string appointmentStatus = AppointmentStatus.PENDING.ToString();
 
             //verify mentor and mentee exists
-            var foundMentor = await _userManager.FindByNameAsync(appointmentCreds.MentorUsername);
+            var foundMentor = await _userManager.FindByNameAsync(_httpContextAccessor.GetUsernameOfCurrentUser());
             var foundMentee = await _userManager.FindByNameAsync(appointmentCreds.MenteeUsername);
             if (foundMentor == null || foundMentee == null)
             {
@@ -198,7 +203,7 @@ namespace LifeLongApi.Services
                     //the appointment was missed and its being rescheduled.
                     isRescheduled = true;
                 }else{
-                    //appointment has been moved to a new date and time.
+                    //appointment has been moved to a new date and/or time.
                     isPostponed = true;
                     appointmentStatus = AppointmentStatus.POSTPONED.ToString();
                 }
@@ -216,21 +221,32 @@ namespace LifeLongApi.Services
             if (isPostponed)
             {
                 //notify mentee of the new change.
-                message = "Your appointment with {"
+                message = "Your appointment with <b>"
                               + foundMentor.FirstName
+                              + " "
                               + foundMentor.LastName
-                              + "} has been moved to <b>"
+                              + "</b> has been moved to <b>"
                               + TimeZoneInfo.ConvertTimeFromUtc(appointment.DateAndTime,
                                          TimeZoneInfo.FindSystemTimeZoneById(foundMentee.TimeZone)).ToShortDateString()
+                              + "</b>"
+                              +"Will start by : <b>"
+                              + TimeZoneInfo.ConvertTimeFromUtc(appointment.DateAndTime,
+                                  TimeZoneInfo.FindSystemTimeZoneById(foundMentee.TimeZone)).ToShortTimeString()
                               + "</b>";
-            }else if(isRescheduled){
+            }
+            else if(isRescheduled){
                 //notify mentee of the new change.
-                message = "Your appointment with {"
+                message = "Your appointment with <b>"
                               + foundMentor.FirstName
+                              + " "
                               + foundMentor.LastName
-                              + "} has been rescheduled to <b>"
+                              + "</b> has been rescheduled to <b>"
                               + TimeZoneInfo.ConvertTimeFromUtc(appointment.DateAndTime,
                                          TimeZoneInfo.FindSystemTimeZoneById(foundMentee.TimeZone)).ToShortDateString()
+                              + "</b>"
+                              + "Time will be: <b>"
+                              + TimeZoneInfo.ConvertTimeFromUtc(appointment.DateAndTime,
+                                  TimeZoneInfo.FindSystemTimeZoneById(foundMentee.TimeZone)).ToShortTimeString()
                               + "</b>";
             }
 

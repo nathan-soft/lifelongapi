@@ -10,9 +10,9 @@ namespace LifeLongApi.Services
 {
     public interface IFollowService
     {
-        Task<ServiceResponse<FriendDto>> ConfirmMentorshipRequestAsync(int mentorshipId, MentorshipRequestUpdateDto mentorshipRequest);
+        Task<ServiceResponse<FriendDto>> ConfirmMentorshipRequestAsync(int mentorshipId, AppHelper.FollowStatus status);
         Task<ServiceResponse<UnAttendedRequestDto>> CreateMentorshipRequestAsync(FollowDto requestCreds);
         Task<ServiceResponse<UnAttendedRequestDto>> DeleteMentorshipRequestAsync(int mentorshipId);
-        Task<ServiceResponse<UnAttendedRequestDto>> PutMentorshipRequestOnHoldAsync(int mentorshipId, MentorshipRequestUpdateDto mentorshipRequest);
+        Task<ServiceResponse<UnAttendedRequestDto>> PutMentorshipRequestOnHoldAsync(int mentorshipId, AppHelper.FollowStatus status);
     }
 }

@@ -51,28 +51,28 @@ namespace LifeLongApi.Migrations
                         new
                         {
                             Id = 1,
-                            ConcurrencyStamp = "57198110-29d9-45cd-a90a-67b70119568a",
+                            ConcurrencyStamp = "3e409949-f880-470a-a549-437bd7d41777",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
                             Id = 2,
-                            ConcurrencyStamp = "8f8fcb7f-cb16-4ab0-bc83-06681c0af611",
+                            ConcurrencyStamp = "54549574-8b8c-4f9c-ad77-81f89e41a3b5",
                             Name = "Moderator",
                             NormalizedName = "MODERATOR"
                         },
                         new
                         {
                             Id = 3,
-                            ConcurrencyStamp = "a95fac8a-f319-4255-a655-9f869362321d",
+                            ConcurrencyStamp = "13cc9c25-1160-48d6-bcd1-8584f879b4a9",
                             Name = "Mentor",
                             NormalizedName = "MENTOR"
                         },
                         new
                         {
                             Id = 4,
-                            ConcurrencyStamp = "ce08969e-946a-42ba-8fe7-2fe437e8a931",
+                            ConcurrencyStamp = "7070efea-5a91-42bf-b0c4-1208e882b973",
                             Name = "Mentee",
                             NormalizedName = "MENTEE"
                         });
@@ -101,6 +101,9 @@ namespace LifeLongApi.Migrations
                     b.Property<string>("Country")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Email")
                         .HasColumnType("nvarchar(256)")
                         .HasMaxLength(256);
@@ -115,6 +118,9 @@ namespace LifeLongApi.Migrations
                     b.Property<string>("Gender")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -155,6 +161,9 @@ namespace LifeLongApi.Migrations
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("bit");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("UserName")
                         .HasColumnType("nvarchar(256)")
@@ -246,6 +255,10 @@ namespace LifeLongApi.Migrations
 
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Excerpt")
+                        .HasColumnType("nvarchar(70)")
+                        .HasMaxLength(70);
 
                     b.Property<string>("ImageUrl")
                         .IsRequired()

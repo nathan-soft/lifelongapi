@@ -4,6 +4,7 @@ using LifeLongApi.Data.Repositories;
 using LifeLongApi.Dtos;
 using LifeLongApi.Dtos.Response;
 using LifeLongApi.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,7 @@ namespace LifeLongApi.Services
         private readonly UserManager<AppUser> _userManager;
         private readonly IUserService _userService;
         private readonly IUserFieldOfInterestRepository _userFieldOfInterestRepo;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         public FollowService(IFollowRepository followRepo,
                              IMapper mapper,
                              IEmailService emailService,
@@ -31,7 +33,8 @@ namespace LifeLongApi.Services
                              ITopicService topicService,
                              UserManager<AppUser> userManager,
                              IUserService userService,
-                             IUserFieldOfInterestRepository userFieldOfInterestRepo)
+                             IUserFieldOfInterestRepository userFieldOfInterestRepo,
+                             IHttpContextAccessor httpContextAccessor)
         {
             _followRepo = followRepo;
             _mapper = mapper;
@@ -41,6 +44,7 @@ namespace LifeLongApi.Services
             _userManager = userManager;
             _userService = userService;
             _userFieldOfInterestRepo = userFieldOfInterestRepo;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<ServiceResponse<UnAttendedRequestDto>> CreateMentorshipRequestAsync(FollowDto requestCreds)
@@ -105,7 +109,7 @@ namespace LifeLongApi.Services
 
         }
 
-        public async Task<ServiceResponse<FriendDto>> ConfirmMentorshipRequestAsync(int mentorshipId, MentorshipRequestUpdateDto mentorshipRequest)
+        public async Task<ServiceResponse<FriendDto>> ConfirmMentorshipRequestAsync(int mentorshipId, FollowStatus status)
         {
             var sr = new ServiceResponse<FriendDto>();
             //get pending mentorship
@@ -118,14 +122,14 @@ namespace LifeLongApi.Services
             }
 
             //Validation
-            var result = ValidateMentorshipCred<FriendDto>(foundPendingMentorship, mentorshipRequest);
+            var result = ValidateMentorshipCred<FriendDto>(foundPendingMentorship, status);
             if (!result.Success)
             {
                 return result;
             }
 
             //update mentorship request.
-            await UpdateMentorshipStatusAsync(foundPendingMentorship, mentorshipRequest.Status);
+            await UpdateMentorshipStatusAsync(foundPendingMentorship, status);
 
             //send notification to mentee.
             string message;
@@ -149,7 +153,7 @@ namespace LifeLongApi.Services
 
         }
 
-        public async Task<ServiceResponse<UnAttendedRequestDto>> PutMentorshipRequestOnHoldAsync(int mentorshipId, MentorshipRequestUpdateDto mentorshipRequest)
+        public async Task<ServiceResponse<UnAttendedRequestDto>> PutMentorshipRequestOnHoldAsync(int mentorshipId, FollowStatus status)
         {
             var sr = new ServiceResponse<UnAttendedRequestDto>();
             //get pending mentorship
@@ -161,14 +165,14 @@ namespace LifeLongApi.Services
                 return sr.HelperMethod(404, "Pending mentorship request not found.", false);
             }
             //Validation
-            var result = ValidateMentorshipCred<UnAttendedRequestDto>(foundPendingMentorship, mentorshipRequest);
+            var result = ValidateMentorshipCred<UnAttendedRequestDto>(foundPendingMentorship, status);
             if (!result.Success)
             {
                 return result;
             }
 
             //update mentorship request.
-            await UpdateMentorshipStatusAsync(foundPendingMentorship, mentorshipRequest.Status);
+            await UpdateMentorshipStatusAsync(foundPendingMentorship, status);
 
             //send notification to mentee.
             string message;
@@ -212,8 +216,7 @@ namespace LifeLongApi.Services
 
 
 
-        private ServiceResponse<T> ValidateMentorshipCred<T>(Follow pendingMentorship,
-                                                                           MentorshipRequestUpdateDto creds)
+        private ServiceResponse<T> ValidateMentorshipCred<T>(Follow pendingMentorship, FollowStatus status)
         {
             ///TODO
             ///MentorshipRequestUpdateDto don't need the username property since it's only mentors that can perform this action and the "current user" can be gotten from the HttpContext.User proprty.
@@ -224,14 +227,14 @@ namespace LifeLongApi.Services
             //verify mentor username
             //this is to make sure that the mentor username provided, matches the same mentor username the mentorship 
             //request was initially sent to.
-            if (pendingMentorship.Mentor.UserName != creds.MentorUsername)
+            if (pendingMentorship.Mentor.UserName != _httpContextAccessor.GetUsernameOfCurrentUser())
             {
                 return sr.HelperMethod(403, $"You do not have the permission to perform the action.", false);
-            }else if(pendingMentorship.Status == FollowStatus.CONFIRMED.ToString() || creds.Status == FollowStatus.PENDING){
+            }else if(pendingMentorship.Status == FollowStatus.CONFIRMED.ToString() || status == FollowStatus.PENDING){
                 //should not be able to make changes to a mentorship request that's been confirmed already.
                 //or reverting back the status of a request to "Pending".
                 return sr.HelperMethod(403, "The action is not allowed.", false);
-            }else if (pendingMentorship.Status == creds.Status.ToString())
+            }else if (pendingMentorship.Status == status.ToString())
             {
                 return sr.HelperMethod(400, "No action was taken because the mentorship request is already up to date.", false);
             }

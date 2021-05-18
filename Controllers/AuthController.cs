@@ -50,22 +50,20 @@ namespace LifeLongApi.Controllers {
             }
 
             [HttpPost("register")]
-            public async Task<ApiResponseDto> Register (RegisterDto userInfo) {
+            public async Task<ApiResponseDto> Register (RegisterUserDto userInfo) {
                 try
                 {
                 //try creating the user.
-                var result = await _userService.CreateUserAsync(userInfo);
+                var result = await _userService.CreateUserAsync(userInfo, userInfo.Role);
                 //set status code.
                 HttpContext.Response.StatusCode = result.Code;
-                if (result.Data != null)
+                if (result.Success)
                 {
                     //user was created successfully
                     //set  location header of newly created user.
                     Response
                             .Headers
                             .Add(HeaderNames.Location, $"{HttpContext.Request.Host}/api/users/{result.Data.Email}");
-                    //Take of password before returning data.
-                    result.Data.Password = null;
                     return _apiOkResponse = _mapper.Map<ApiOkResponseDto>(result);
                 }
                 else

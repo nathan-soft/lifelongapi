@@ -71,15 +71,15 @@ namespace LifeLongApi.Controllers
 
         [HttpPut("{mentorshipRequestId}")]
         public async Task<ApiResponseDto> UpdateMentorshipRequestAsync(int mentorshipRequestId,
-                                                           MentorshipRequestUpdateDto mentorshipCreds)
+                                                           AppHelper.FollowStatus status)
         {
             ServiceResponse<FriendDto> response;
             ServiceResponse<UnAttendedRequestDto> response1;
             try
             {
-                if(mentorshipCreds.Status == AppHelper.FollowStatus.CONFIRMED)
+                if(status == AppHelper.FollowStatus.CONFIRMED)
                 {
-                    response = await _followService.ConfirmMentorshipRequestAsync(mentorshipRequestId, mentorshipCreds);
+                    response = await _followService.ConfirmMentorshipRequestAsync(mentorshipRequestId, status);
                     //set status code.
                     HttpContext.Response.StatusCode = response.Code;
 
@@ -94,9 +94,9 @@ namespace LifeLongApi.Controllers
                         return _apiErrorResponse = _mapper.Map<ApiErrorResponseDto>(response);
                     }
                 }
-                else if(mentorshipCreds.Status == AppHelper.FollowStatus.ONHOLD)
+                else if(status == AppHelper.FollowStatus.ONHOLD)
                 {
-                    response1 = await _followService.PutMentorshipRequestOnHoldAsync(mentorshipRequestId, mentorshipCreds);
+                    response1 = await _followService.PutMentorshipRequestOnHoldAsync(mentorshipRequestId, status);
                     //set status code.
                     HttpContext.Response.StatusCode = response1.Code;
 

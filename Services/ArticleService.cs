@@ -187,7 +187,7 @@ namespace LifeLongApi.Services
             //Delete article from db.
             await _articleRepo.DeleteAsync(article);
 
-            return sr.HelperMethod(200, "Delete Successful.", true);
+            return sr.HelperMethod(200, "Blog Post deleted successfully.", true);
         }
 
         private bool ImageGreaterThan2Mb(long imgSize)

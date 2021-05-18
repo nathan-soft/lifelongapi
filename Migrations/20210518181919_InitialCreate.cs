@@ -49,7 +49,10 @@ namespace LifeLongApi.Migrations
                     City = table.Column<string>(nullable: true),
                     State = table.Column<string>(nullable: true),
                     Country = table.Column<string>(nullable: true),
-                    TimeZone = table.Column<string>(nullable: false)
+                    TimeZone = table.Column<string>(nullable: false),
+                    IsActive = table.Column<bool>(nullable: false),
+                    CreatedOn = table.Column<DateTime>(nullable: false),
+                    UpdatedOn = table.Column<DateTime>(nullable: false)
                 },
                 constraints: table =>
                 {
@@ -137,7 +140,7 @@ namespace LifeLongApi.Migrations
                         column: x => x.MentorId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateTable(
@@ -150,6 +153,7 @@ namespace LifeLongApi.Migrations
                     UpdatedOn = table.Column<DateTime>(nullable: false),
                     AuthorId = table.Column<int>(nullable: false),
                     Title = table.Column<string>(maxLength: 70, nullable: false),
+                    Excerpt = table.Column<string>(maxLength: 70, nullable: true),
                     ImageUrl = table.Column<string>(nullable: false),
                     Body = table.Column<string>(nullable: false)
                 },
@@ -271,7 +275,7 @@ namespace LifeLongApi.Migrations
                         column: x => x.CreatedById,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_Notification_AspNetUsers_CreatedForId",
                         column: x => x.CreatedForId,
@@ -398,7 +402,7 @@ namespace LifeLongApi.Migrations
                         column: x => x.MentorId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_Follows_Topics_TopicId",
                         column: x => x.TopicId,
@@ -475,10 +479,10 @@ namespace LifeLongApi.Migrations
                 columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
                 values: new object[,]
                 {
-                    { 1, "57198110-29d9-45cd-a90a-67b70119568a", "Admin", "ADMIN" },
-                    { 2, "8f8fcb7f-cb16-4ab0-bc83-06681c0af611", "Moderator", "MODERATOR" },
-                    { 3, "a95fac8a-f319-4255-a655-9f869362321d", "Mentor", "MENTOR" },
-                    { 4, "ce08969e-946a-42ba-8fe7-2fe437e8a931", "Mentee", "MENTEE" }
+                    { 1, "3e409949-f880-470a-a549-437bd7d41777", "Admin", "ADMIN" },
+                    { 2, "54549574-8b8c-4f9c-ad77-81f89e41a3b5", "Moderator", "MODERATOR" },
+                    { 3, "13cc9c25-1160-48d6-bcd1-8584f879b4a9", "Mentor", "MENTOR" },
+                    { 4, "7070efea-5a91-42bf-b0c4-1208e882b973", "Mentee", "MENTEE" }
                 });
 
             migrationBuilder.CreateIndex(

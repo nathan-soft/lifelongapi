@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
@@ -66,8 +67,16 @@ namespace LifeLongApi.Services
             return sr;
         }
 
-        public ServiceResponse<List<RoleDto>> GetRoles(){
-            var roles =  _roleManager.Roles.ToList();
+        /// <summary>
+        /// Gets admin level roles from the db
+        /// </summary>
+        /// <returns>All admin level roles except the "Admin" role.</returns>
+        public async Task<ServiceResponse<List<RoleDto>>> GetAdminRolesAsync(){
+            var roles = await _roleManager.Roles.AsNoTracking()
+                                                .Where(r => r.NormalizedName != AppHelper.Roles.ADMIN.ToString()
+                                                            && r.NormalizedName != AppHelper.Roles.MENTOR.ToString()
+                                                            && r.NormalizedName != AppHelper.Roles.MENTEE.ToString())
+                                                .ToListAsync();
             var sr = new ServiceResponse<List<RoleDto>>();
             sr.Code = 200;
             sr.Data = _mapper.Map<List<RoleDto>>(roles);

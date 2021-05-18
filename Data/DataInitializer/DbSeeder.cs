@@ -42,8 +42,8 @@ namespace LifeLongApi.Data.DataInitializer
 
         private static async Task SeedUsersAsync()
         {
-            var users = new List<RegisterDto>() {
-                new RegisterDto {
+            var users = new List<RegisterUserDto>() {
+                new RegisterUserDto {
                 Email = "informjiday@gmail.com",
                 FirstName = "Jide",
                 LastName = "Ayegbusi",
@@ -53,7 +53,7 @@ namespace LifeLongApi.Data.DataInitializer
                 Role = "Admin",
                 TimeZone = TimeZoneInfo.Local.Id
                 },
-                new RegisterDto {
+                new RegisterUserDto {
                 Email = "nathan@idevworks.com",
                 FirstName = "Nathan",
                 LastName = "Omomowo",
@@ -63,7 +63,7 @@ namespace LifeLongApi.Data.DataInitializer
                 Role = "Moderator",
                 TimeZone = TimeZoneInfo.Local.Id
                 },
-                new RegisterDto {
+                new RegisterUserDto {
                 Email = "mentor@lifelong.com",
                 FirstName = "Lifelong",
                 LastName = "Mentor",
@@ -73,7 +73,7 @@ namespace LifeLongApi.Data.DataInitializer
                 Role = "Mentor",
                 TimeZone = TimeZoneInfo.Local.Id
                 },
-                new RegisterDto {
+                new RegisterUserDto {
                 Email = "mentee@lifelong.com",
                 FirstName = "Lifelong",
                 LastName = "Mentee",
@@ -89,7 +89,7 @@ namespace LifeLongApi.Data.DataInitializer
             {
                 foreach (var user in users)
                 {
-                    var result = await _userService.CreateUserAsync(user);
+                    var result = await _userService.CreateUserAsync(user, user.Role);
                 }
             }
             catch (System.Exception ex)

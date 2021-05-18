@@ -1,7 +1,7 @@
 using AutoMapper;
 using LifeLongApi.Codes;
-using LifeLongApi.Dtos;
 using LifeLongApi.Data.Repositories;
+using LifeLongApi.Dtos;
 using LifeLongApi.Dtos.Response;
 using LifeLongApi.Models;
 using Microsoft.AspNetCore.Http;
@@ -10,7 +10,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using static LifeLongApi.Codes.AppHelper;
 
 namespace LifeLongApi.Services
 {
@@ -18,6 +17,7 @@ namespace LifeLongApi.Services
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<AppRole> _roleManager;
+        private readonly IEmailService _emailService;
         private readonly IUserRepository _userRepo;
         private readonly IFollowRepository _followRepo;
         private readonly ITopicService _topicService;
@@ -27,17 +27,20 @@ namespace LifeLongApi.Services
         private readonly IUserFieldOfInterestRepository _userFieldOfInterestRepo;
         private readonly IWorkExperienceRepository _workExperienceRepo;
         private readonly IMapper _mapper;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         public UserService(UserManager<AppUser> userManager,
                            RoleManager<AppRole> roleManager,
                            IUserRepository userRepo,
                            IAppointmentRepository appointmentRepo,
                            IFollowRepository followRepo,
                            ITopicService topicService,
+                           IEmailService emailService,
                            IMapper mapper,
                            IUserFieldOfInterestRepository userFieldOfInterestRepo,
                            IQualificationRepository qualificationRepo,
                            INotificationService notificationService,
-                           IWorkExperienceRepository workExperienceRepo)
+                           IWorkExperienceRepository workExperienceRepo,
+                           IHttpContextAccessor httpContextAccessor)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -45,13 +48,62 @@ namespace LifeLongApi.Services
             _followRepo = followRepo;
             _topicService= topicService;
             _mapper = mapper;
+            _emailService = emailService;
             _userFieldOfInterestRepo = userFieldOfInterestRepo;
             _qualificationRepo = qualificationRepo;
             _notificationService = notificationService;
             _workExperienceRepo = workExperienceRepo;
+            _httpContextAccessor = httpContextAccessor;
         }
-        public async Task<ServiceResponse<RegisterDto>> CreateUserAsync(RegisterDto newUser){
-            var sr = new ServiceResponse<RegisterDto>();
+
+        public async Task<ServiceResponse<List<AppUserResponseDto>>> GetNonAdministrativeUsersAsync(string filterString)
+        {
+            var users = await _userRepo.GetNonAdministrativeUsersAsync(filterString);
+            var sr = new ServiceResponse<List<AppUserResponseDto>>();
+            
+            sr.Code = 200;
+            sr.Success = true;
+            sr.Data = _mapper.Map<List<AppUserResponseDto>>(users);
+            return sr;
+        }
+
+        public async Task<ServiceResponse<List<AppUserResponseDto>>> GetAdministrativeUsersAsync()
+        {
+            var users = await _userRepo.GetAdministrativeUsersAsync();
+            var sr = new ServiceResponse<List<AppUserResponseDto>>();
+
+            sr.Code = 200;
+            sr.Success = true;
+            sr.Data = _mapper.Map<List<AppUserResponseDto>>(users);
+            return sr;
+        }
+
+        public async Task<ServiceResponse<UserDto>> GetUserByUsernameAsync(string username)
+        {
+            var foundUser = await _userManager.FindByNameAsync(username);
+            var sr = new ServiceResponse<UserDto>();
+            if (foundUser != null)
+            {
+                //the user exist in db.
+                var userDto = _mapper.Map<UserDto>(foundUser);
+                var friends = await GetUserFriendsAsync(username);
+                userDto.Friends = friends.Data;
+
+                sr.Code = 200;
+                sr.Success = true;
+                sr.Data = userDto;
+            }
+            else
+            {
+                //user does not exist.
+                sr.HelperMethod(404, "User not found.", false);
+            }
+            return sr;
+        }
+
+        public async Task<ServiceResponse<AppUserResponseDto>> CreateUserAsync(NewUserDto newUser, params string[] roles)
+        {
+            var sr = new ServiceResponse<AppUserResponseDto>();
 
             if (!string.IsNullOrWhiteSpace(newUser.TimeZone))
             {
@@ -64,42 +116,61 @@ namespace LifeLongApi.Services
                 {
                     return sr.HelperMethod(400, "Please select a valid time zone.", false);
                 }
-                
+
             }
 
-            bool roleExists = await _roleManager.RoleExistsAsync(newUser.Role);
-            if (!roleExists)
+            foreach (var role in roles)
             {
-                return sr.HelperMethod(400, "Role does not exist.", false);
+                if(!await _roleManager.RoleExistsAsync(role))
+                {
+                    string message = "Role does not exist.";
+                    if(roles.Count() > 1)
+                    {
+                        message = "One of the roles does not exist.";
+                    }
+
+                    return sr.HelperMethod(400, message, false);
+                }
             }
 
 
             var convertedUser = _mapper.Map<AppUser>(newUser);
 
             var foundUser = await _userManager.FindByEmailAsync(newUser.Email);
-            
+
             if (foundUser != null)
             {
                 //the email exist in db.
-                sr.Code = 400;
-                sr.Success = false;
-                sr.Message = "email address already exist.";
+                return sr.HelperMethod(400, "email address already exist.", false);
+            }
+
+            //create the user.
+            convertedUser.UserName = newUser.Email;
+            var result = await _userManager.CreateAsync(convertedUser, newUser.Password);
+            if (result.Succeeded)
+            {
+                //associate the user with specified role(s)
+                var rolesAdded = await _userManager.AddToRolesAsync(convertedUser, roles);
+                if (rolesAdded.Succeeded)
+                {
+                    var user = _mapper.Map<AppUserResponseDto>(convertedUser);
+                    user.Roles = roles.ToList();
+
+                    sr.Code = 201;
+                    sr.Data = user;
+                    sr.Success = true;
+                }
+                else
+                {
+                    throw new AggregateException(rolesAdded.Errors.Select(err => new Exception(err.Description)));
+                }
+
+                return sr;
             }
             else
             {
-                //create the user.
-                convertedUser.UserName = newUser.Email;
-                var result = await _userManager.CreateAsync(convertedUser, newUser.Password);
-                if (result.Succeeded)
-                {
-                    //associate the user with a role
-                    await _userManager.AddToRoleAsync(convertedUser, newUser.Role);
-                    sr.Code = 201;
-                    sr.Data = newUser;
-                    sr.Success = true;
-                }
+                throw new AggregateException(result.Errors.Select(err => new Exception(err.Description)));
             }
-            return sr;
         }
 
         public async Task<ServiceResponse<UserDto>> UpdateUserAsync(string username, UserDto userCreds)
@@ -142,26 +213,62 @@ namespace LifeLongApi.Services
             return sr;
         }
 
-        public async Task<ServiceResponse<UserDto>> GetUserByUsernameAsync(string username){
-            var foundUser = await _userManager.FindByNameAsync(username);
-            var sr = new ServiceResponse<UserDto>();
-            if (foundUser != null)
-            {
-                //the user exist in db.
-                var userDto = _mapper.Map<UserDto>(foundUser);
-                var friends = await GetUserFriendsAsync(username);
-                userDto.Friends = friends.Data;
+        public async Task<ServiceResponse<string>> DeleteUserAsync(string userEmail)
+        {
+            var sr = new ServiceResponse<string>();
 
-                sr.Code = 200;
-                sr.Success = true;
-                sr.Data = userDto;
-            }
-            else
+            //get qualification.
+            var user = await _userManager.FindByNameAsync(userEmail);
+            //check exsitence of user.
+            if (user == null)
             {
-                //user does not exist.
-                sr.HelperMethod(404, "User not found.", false);
+                //error
+                return sr.HelperMethod(404, "User not found.", false);
             }
+
+
+            //Only users with "Admin" privilege and the user whose email equals "userEmail" (i.e a user trying to del their account),
+            //can perform a delete without any constriant.
+            if (user.Email != _httpContextAccessor.GetUsernameOfCurrentUser() && !_httpContextAccessor.HttpContext.User.IsInRole("Admin"))
+            {
+                //if we got here, it means the current user belongs to the "Moderator" role...
+                //users with "Moderator" role should not be able to delete fellow "Moderators" and "Admin(s)"..
+                if(user.UserRoles.Any(ur => ur.Role.NormalizedName == AppHelper.Roles.MODERATOR.ToString() 
+                    || ur.Role.NormalizedName == AppHelper.Roles.ADMIN.ToString()))
+                {
+                    //error
+                    return sr.HelperMethod(403, "You do not have the permission to perform the action.", false);
+                }
+            }
+
+            //For users that are mentors or mentees, make sure to delete every other data relating to them.
+            //Mentors with active mentorship shouldn't b able to delete their accounts.
+            //Delete qualification for a user.
+            await _userManager.DeleteAsync(user);
+
+            sr.Code = 200;
+            sr.Message = "User delete successful.";
+            sr.Success = true;
             return sr;
+        }
+
+        public async Task<ServiceResponse<string>> SendMailToUserAsync(MailDto mailInfo)
+        {
+            var sr = new ServiceResponse<string>();
+
+            //get qualification.
+            var user = await _userManager.FindByEmailAsync(mailInfo.UserEmail);
+            //check exsitence of user.
+            if (user == null)
+            {
+                //error
+                return sr.HelperMethod(404, "User not found.", false);
+            }
+
+            //Attempt to send mail
+            await _emailService.SendMailToUserAsync(user, mailInfo.Subject, mailInfo.Message);
+
+            return sr.HelperMethod(message: "Mail sent successfully.");
         }
 
         public async Task<ServiceResponse<List<SearchResponseDto>>> GetMentorsByFieldOfInterestAsync(string searchString)
@@ -179,9 +286,9 @@ namespace LifeLongApi.Services
                 return sr.HelperMethod(404, topicCreds.Message, false);
             }
 
-            var users = await _userRepo.GetUsersByFieldOfInterestAsync(topicCreds.Data.Id);
-            var mentors = await GetMentorsFromUsersAsync(users);
-            var searchResult = _mapper.Map<List<SearchResponseDto>>(mentors);
+            var mentors = await _userRepo.GetMentorsByFieldOfInterestAsync(topicCreds.Data.Id);
+            var mentorsWithUniqueMentees = await GetUniqueMenteesForAllMentorAsync(mentors);
+            var searchResult = _mapper.Map<List<SearchResponseDto>>(mentorsWithUniqueMentees);
 
             sr.Data = searchResult;
             sr.Code = 200;
@@ -190,37 +297,29 @@ namespace LifeLongApi.Services
         }
 
         /// <summary>
-        /// Gets all users with the role of mentor.
+        /// Gets unique mentees for respective mentors.
         /// </summary>
-        /// <param name="users">The list of users to filter from.</param>
-        /// <returns>A task that represent the asynchronous operation. The task result contains list of users that all belongs to the mentor role.</returns>
-        public async Task<List<AppUser>> GetMentorsFromUsersAsync(IEnumerable<AppUser> users)
+        /// <param name="users">The mentors.</param>
+        /// <returns>A task that represent the asynchronous operation. The task result contains list of mentors and their respective mentees.</returns>
+        public async Task<List<AppUser>> GetUniqueMenteesForAllMentorAsync(IEnumerable<AppUser> users)
         {
-            if(users is null)
+            if(users is null || !users.Any())
             {
-                throw new ArgumentNullException(nameof(users), $"{nameof(users)} cannot be null.");
-            }
-
-            if (!users.Any())
-            {
-                throw new ArgumentException($"{nameof(users)} cannot be null.", nameof(users));
+                throw new ArgumentNullException(nameof(users), $"{nameof(users)} cannot be null or empty.");
             }
 
             List<AppUser> mentors = new List<AppUser>();
             foreach (var user in users)
-            {
-                //find mentors among list of returned users.
-                if (await _userManager.IsInRoleAsync(user, "Mentor"))
-                {
-                    var menteesRelationships = await _followRepo.GetAllMentorshipInfoForMentor(user.Id);
-                    //select unique mentees
-                    var uniqueMentees = menteesRelationships.GroupBy(m => m.MenteeId)
-                                                            .Select(i => i.FirstOrDefault())
-                                                            .ToList();
-                    user.Mentees = uniqueMentees;
-                    user.UserFieldOfInterests = await _userFieldOfInterestRepo.GetFieldOfInterestsForUserAsync(user.Id);
-                    mentors.Add(user);
-                }
+            {   
+                var menteesRelationships = await _followRepo.GetAllMentorshipInfoForMentor(user.Id);
+                //select unique mentees
+                var uniqueMentees = menteesRelationships.GroupBy(m => m.MenteeId)
+                                                        .Select(i => i.FirstOrDefault())
+                                                        .ToList();
+                user.Mentees = uniqueMentees;
+                //user.UserFieldOfInterests = await _userFieldOfInterestRepo.GetFieldOfInterestsForUserAsync(user.Id);
+                mentors.Add(user);
+                
             }
 
             return mentors;
@@ -235,18 +334,25 @@ namespace LifeLongApi.Services
                 //User does not exist
                 return sr.HelperMethod(404, "User not found.", false);
             }
+
+            
             //save field of interest Ids into a variable
-            var userFieldOfInterestIds = _userFieldOfInterestRepo.GetFieldOfInterestIdsForUser(user.Id);
+            //var userFieldOfInterestIds = _userFieldOfInterestRepo.GetFieldOfInterestIdsForUser(user.Id);
+
+
             //variable to hold field of interest names
             var userFieldOfInterestNames = new List<string>();
-            foreach (var userFieldOfInterestId in userFieldOfInterestIds)
-            {
-                //get field of interest with id
-                var fieldOfInterest = await _topicService.GetFieldOfInterestByIdAsync(userFieldOfInterestId);
-                //add fieldOfInterest name to variable;
-                userFieldOfInterestNames.Add(fieldOfInterest.Data.Name);
-            }
-            
+            userFieldOfInterestNames = user.UserFieldOfInterests.Select(ufi => ufi.Topic.Name).ToList();
+
+
+            //foreach (var userFieldOfInterestId in userFieldOfInterestIds)
+            //{
+            //    //get field of interest with id
+            //    var fieldOfInterest = await _topicService.GetFieldOfInterestByIdAsync(userFieldOfInterestId);
+            //    //add fieldOfInterest name to variable;
+            //    userFieldOfInterestNames.Add(fieldOfInterest.Data.Name);
+            //}
+
             sr.Data = userFieldOfInterestNames;
             sr.Success = true;
             sr.Code = 200;
@@ -366,7 +472,7 @@ namespace LifeLongApi.Services
         {
             var sr = new ServiceResponse<QualificationResponseDto>();
             //verify user exists
-            var foundUser = await _userManager.FindByNameAsync(qualificationCreds.Username);
+            var foundUser = await _userManager.FindByNameAsync(_httpContextAccessor.GetUsernameOfCurrentUser());
             if (foundUser == null)
             {
                 sr.HelperMethod(404, "User not found", false);
@@ -418,7 +524,7 @@ namespace LifeLongApi.Services
         {
             var sr = new ServiceResponse<QualificationResponseDto>();
             //verify user exists
-            var foundUser = await _userManager.FindByNameAsync(qualificationCreds.Username);
+            var foundUser = await _userManager.FindByNameAsync(_httpContextAccessor.GetUsernameOfCurrentUser());
             if (foundUser == null)
             {
                 sr.HelperMethod(404, "User not found", false);
@@ -730,7 +836,5 @@ namespace LifeLongApi.Services
             message = "";
             return true;
         }
-
-        
     }
 }

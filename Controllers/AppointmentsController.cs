@@ -30,6 +30,7 @@ namespace LifeLongApi.Controllers
             _apiOkResponse = apiOkResponse;
         }
 
+        [Authorize(Roles = "Mentor")]
         [HttpPost]
         public async Task<ApiResponseDto> NewAppointmentAsync(AppointmentDto appointmentCreds)
         {
@@ -63,6 +64,7 @@ namespace LifeLongApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Mentor")]
         [HttpPut("{appointmentId}")]
         public async Task<ApiResponseDto> ChangeAppointmentAsync(int appointmentId, AppointmentDto appointmentCreds)
         {
@@ -94,6 +96,7 @@ namespace LifeLongApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Mentor")]
         [HttpDelete("{appointmentId}")]
         public async Task<ApiResponseDto> DeleteAppointmentAsync(int appointmentId)
         {

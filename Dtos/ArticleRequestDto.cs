@@ -9,8 +9,10 @@ namespace LifeLongApi.Dtos
 {
     public class ArticleRequestDto
     {
-        [Required, StringLength(70)]
+        [Required, StringLength(70, MinimumLength = 25)]
         public string Title { get; set; }
+        [StringLength(70, MinimumLength = 25, ErrorMessage = "The {0} must be between 25 and 70 characters.")]
+        public string Excerpt { get; set; }
         [Required]
         public IFormFile UploadedImage { get; set; }
         [Required]

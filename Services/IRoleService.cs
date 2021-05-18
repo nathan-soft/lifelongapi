@@ -11,7 +11,7 @@ namespace LifeLongApi.Services
     {
         public Task<ServiceResponse<RoleDto>> NewRoleAsync(string roleName);
 
-        public ServiceResponse<List<RoleDto>> GetRoles();
+        public Task<ServiceResponse<List<RoleDto>>> GetAdminRolesAsync();
 
         public Task<ServiceResponse<RoleDto>> GetRoleByNameAsync(string roleName);
 
