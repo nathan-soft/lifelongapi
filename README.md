@@ -1,1 +1,1 @@
-An API that connects students/trainees with vetted professional/Mentors across several fields.
+An API that connects students/trainees with vetted professionals/Mentors across several fields.
